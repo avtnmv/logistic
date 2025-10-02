@@ -1,0 +1,26 @@
+{
+  "name": "twilio-backend",
+  "version": "1.0.0",
+  "description": "Backend сервер для тестирования Twilio SMS",
+  "main": "backend-server.js",
+  "scripts": {
+    "start": "node backend-server.js",
+    "dev": "nodemon backend-server.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": ["twilio", "sms", "backend", "api"],
+  "author": "Your Name",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.18.2",
+    "twilio": "^4.19.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  }
+}

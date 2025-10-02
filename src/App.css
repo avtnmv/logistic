@@ -1,0 +1,245 @@
+.form__group {
+  position: relative;
+}
+
+.password-toggle {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+  color: #717680;
+}
+
+.password-toggle:active {
+  transform: translateY(-50%) scale(0.95);
+}
+
+.password-toggle svg {
+  transition: all 0.2s ease;
+  width: 20px;
+  height: auto;
+}
+
+@media (max-width: 768px) {
+  .password-toggle {
+    right: 10px;
+    padding: 3px;
+  }
+}
+
+@media (max-width: 480px) {
+  .password-toggle {
+    right: 8px;
+    padding: 2px;
+  }
+}
+
+.form-container {
+  display: flex;
+  flex-direction: column;
+  min-height: 60vh;
+}
+
+.form-message {
+  width: 100%;
+  max-width: 400px;
+  text-align: left;
+  position: relative;
+  z-index: 10;
+  animation: messageSlideIn 0.3s ease-out;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border: 1px solid transparent;
+  word-break: break-word;
+  line-height: 1.4;
+}
+
+@keyframes messageSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.form-message--success {
+  background: #10b981;
+  color: #ffffff;
+  border-color: #10b981;
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.2);
+  margin-bottom: 24px;
+}
+
+.form-message--error {
+  background: #ef4444;
+  color: #ffffff;
+  border-color: #ef4444;
+  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.2);
+  margin-bottom: 24px;
+}
+
+.form-message--info {
+  background: #3b82f6;
+  color: #ffffff;
+  border-color: #3b82f6;
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.2);
+}
+
+.form-message:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.form-message svg {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+}
+
+.code-input-container {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  margin-bottom: 24px;
+}
+
+.code-input {
+  width: 60px;
+  height: 60px;
+  text-align: center;
+  font-size: 24px;
+  font-weight: 600;
+  border: 2px solid #D5D7DA;
+  border-radius: 8px;
+  background: #FFFFFF;
+  color: #152736;
+  transition: all 0.2s ease;
+  outline: none;
+  animation: inputAppear 0.3s ease-out;
+}
+
+.code-input:focus {
+  border-color: #4472B8;
+  box-shadow: 0 0 0 3px rgba(68, 114, 184, 0.1);
+  transform: scale(1.05);
+}
+
+.code-input--correct {
+  border-color: #10b981 !important;
+  background: #f0fdf4 !important;
+}
+
+.code-input--incorrect {
+  border-color: #ef4444 !important;
+  background: #fef2f2 !important;
+}
+
+@keyframes inputAppear {
+  from {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.footer {
+  padding-top: 64px;
+  padding-bottom: 64px;
+  background-color: #152736;
+  margin-top: 128px;
+}
+
+.footer__logo {
+  display: block;
+  margin-bottom: 16px;
+}
+
+.footer__list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.footer__list--company,
+.footer__list--policy {
+  gap: 14px;
+}
+
+.footer__link {
+  color: #FFFFFF;
+  font-size: 16px;
+}
+
+.footer__title {
+  font-size: 14px;
+  color: #FFFFFF;
+}
+
+.footer__info--company, 
+.footer__info--policy {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.footer__container {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+@media (max-width: 768px) {
+  .footer {
+    padding-top: 48px;
+    padding-bottom: 48px;
+    margin-top: 96px;
+  }
+  
+  .footer__container {
+    flex-direction: column;
+    gap: 32px;
+    text-align: center;
+  }
+  
+  .footer__info--company, 
+  .footer__info--policy {
+    align-items: center;
+  }
+}
+
+@media (max-width: 480px) {
+  .footer {
+    padding-top: 32px;
+    padding-bottom: 32px;
+    margin-top: 64px;
+  }
+  
+  .footer__container {
+    gap: 24px;
+  }
+  
+  .footer__logo-img {
+    width: 140px;
+    height: 48px;
+  }
+}
+
+

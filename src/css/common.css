@@ -1,0 +1,166 @@
+* {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    text-decoration: none;
+    box-sizing: border-box;
+    font-family: 'Inter', sans-serif;
+}
+
+:root {
+    /* Размеры */
+    --container-width: 1290px;
+    --border-radius-sm: 5px;
+    --border-radius-md: 8px;
+    
+    /* Цвета */
+    --color-bg: #D9D9D9;
+    --color-primary: #4472B8;
+    --color-light-blue: #EEF4F7;
+    --color-gray: #717680;
+    --color-light-orange: #FFF3E5;
+    --color-light-green: #EDFFC6;
+    --color-brown: #9B721B;
+    --color-white: #FFFFFF;
+    --color-black: #000000;
+    --color-transparent: transparent;
+
+    --color-black: #181D27;
+    --color-dark-gray: #535862;
+}
+
+.form__input{
+    border-radius: var(--border-radius-md);
+    border: 1px solid #D5D7DA;
+    padding-left: 14px;
+    height: 42px;
+    max-width: 384px;
+    width: 100%;
+    color: var(--color-gray);
+}
+
+.form__button{
+    border-radius: var(--border-radius-md);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 42px;
+    max-width: 384px;
+    width: 100%;
+    cursor: pointer;
+    border: none;
+}
+
+.container {
+    max-width: var(--container-width);
+    margin: 0 auto;
+    padding: 0 16px;
+}
+
+.flex-between-center{
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+
+.transition-overlay {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%;
+  height: 100%;
+  background: var(--color-primary);
+  z-index: 9999;
+  transform: translateX(-100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.code-input-container {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  margin-bottom: 24px;
+}
+
+.code-input {
+  width: 60px;
+  height: 60px;
+  border: 2px solid #D5D7DA;
+  border-radius: var(--border-radius-md);
+  text-align: center;
+  font-size: 24px;
+  font-weight: 600;
+  color: var(--color-primary);
+  background: var(--color-white);
+  transition: all 0.3s ease;
+}
+
+.code-input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(68, 114, 184, 0.1);
+}
+
+.code-input.error {
+  border-color: #d32f2f;
+  background: #fff5f5;
+}
+
+.code-input.success {
+  border-color: var(--color-green);
+  background: #f1f8e9;
+}
+
+.form__group {
+  position: relative;
+  margin-bottom: 20px;
+}
+
+.password-toggle {
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  color: var(--color-gray);
+  transition: color 0.3s ease;
+}
+
+.password-toggle svg {
+  width: 20px;
+  height: auto;
+}
+
+.form-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.form__button--secondary {
+  background: var(--color-light-blue);
+  color: var(--color-primary);
+  border: 1px solid var(--color-primary);
+}
+
+.form__button--secondary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+  20%, 40%, 60%, 80% { transform: translateX(5px); }
+}
+
+.shake {
+  animation: shake 0.6s ease-in-out;
+}
+
