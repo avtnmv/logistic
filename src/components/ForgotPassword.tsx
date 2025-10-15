@@ -54,7 +54,7 @@ const ForgotPassword: React.FC = () => {
       showFormMessage('Введите номер телефона', 'error');
       return;
     }
-
+  
     const phoneRegex = /^\+\d{1,4}\d{7,14}$/;
     if (!phoneRegex.test(currentPhone)) {
       showFormMessage('Введите корректный номер телефона в международном формате (например: +380XXXXXXXXX, +998XXXXXXXXX, +1XXXXXXXXXX)', 'error');

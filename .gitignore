@@ -137,3 +137,24 @@ local/
 # Package manager lock files (uncomment if you want to ignore them)
 # package-lock.json
 # yarn.lock
+
+# Additional security and sensitive files
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+secrets/
+credentials/
+config.local.*
+*.secret
+*.private
+
+# Firebase
+.firebase/
+firebase-debug.log
+firebase-debug.*.log
+
+# Local development overrides
+local.json
+dev.json

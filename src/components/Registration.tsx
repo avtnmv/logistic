@@ -1,20 +1,21 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import Header from './Header';
 import Footer from './Footer';
 import FormMessage from './FormMessage';
 import PasswordToggle from './PasswordToggle';
-import { getGlobalTestDB, logTestData, isUserRegistered, registerUser, saveUsersToStorage, updateUserInDB } from '../data/testData';
 import { usePasswordToggle } from '../hooks/usePasswordToggle';
-import { verificationService } from '../services/verificationService';
+import { useFirebaseSMS } from '../services/firebaseSMS';
+import { authService } from '../services/authService';
+import apiClient from '../services/apiClient';
 import '../css/login.css';
 
 const Registration: React.FC = () => {
   const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState<'phone' | 'code' | 'details' | 'success'>('phone');
   const [phone, setPhone] = useState('');
-  const [codeInputs, setCodeInputs] = useState(['', '', '', '']);
+  const [codeInputs, setCodeInputs] = useState(['', '', '', '', '', '']);
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [password, setPassword] = useState('');
@@ -23,26 +24,122 @@ const Registration: React.FC = () => {
   const [messageType, setMessageType] = useState<'success' | 'error' | 'info'>('info');
   const [showMessage, setShowMessage] = useState(false);
   const [isCodeCorrect, setIsCodeCorrect] = useState<boolean | null>(null);
-  const [countdown, setCountdown] = useState(0);
+  const [isLoading, setIsLoading] = useState(false);
+  const [accessToken, setAccessToken] = useState<string | null>(null);
+  const [refreshToken, setRefreshToken] = useState<string | null>(null);
 
   const passwordToggle = usePasswordToggle();
   const confirmPasswordToggle = usePasswordToggle();
 
-  const testDB = getGlobalTestDB();
+  const showFormMessage = (text: string, type: 'success' | 'error' | 'info') => {
+    setMessage(text);
+    setMessageType(type);
+    setShowMessage(true);
+  };
 
-  React.useEffect(() => {
-    logTestData('ТЕСТОВЫЕ ДАННЫЕ ДЛЯ РЕГИСТРАЦИИ');
+  // Проверка валидности токенов
+  const checkTokenValidity = useCallback(async (savedAccessToken: string, savedRefreshToken: string) => {
+    try {
+      console.log('Проверяем валидность сохраненных токенов...');
+      // Устанавливаем токены в apiClient для проверки
+      apiClient.setTokens(savedAccessToken, savedRefreshToken);
+      
+      // Проверяем токены через API
+      const response = await authService.getMe();
+      console.log('Ответ getMe:', response);
+      
+      if (response.status && response.data) {
+        console.log('Стадия регистрации:', response.data.registration_stage);
+        // Проверяем, что регистрация не завершена
+        if (response.data.registration_stage === 'PHONE_VERIFIED') {
+          // Токены валидны, переходим к завершению регистрации
+          console.log('Переходим к завершению регистрации');
+          setAccessToken(savedAccessToken);
+          setRefreshToken(savedRefreshToken);
+          setPhone(response.data.phone);
+          setCurrentStep('details');
+          showFormMessage('Продолжите завершение регистрации', 'info');
+        } else if (response.data.registration_stage === 'COMPLETED') {
+          // Регистрация уже завершена, очищаем токены
+          console.log('Регистрация уже завершена');
+          localStorage.removeItem('registration_accessToken');
+          localStorage.removeItem('registration_refreshToken');
+          showFormMessage('Регистрация уже завершена. Перейдите к входу в систему.', 'info');
+        }
+      }
+    } catch (error: any) {
+      // Токены невалидны, очищаем их
+      console.error('Ошибка проверки токенов:', error);
+      localStorage.removeItem('registration_accessToken');
+      localStorage.removeItem('registration_refreshToken');
+      console.log('Токены невалидны, начинаем регистрацию заново');
+    }
   }, []);
 
+  // Проверяем сохраненные токены при загрузке
   useEffect(() => {
-    let interval: NodeJS.Timeout;
-    if (countdown > 0) {
-      interval = setInterval(() => {
-        setCountdown(prev => prev - 1);
-      }, 1000);
+    console.log('🚀 Компонент Registration загружен');
+    const savedAccessToken = localStorage.getItem('registration_accessToken');
+    const savedRefreshToken = localStorage.getItem('registration_refreshToken');
+    
+    console.log('🔑 Сохраненные токены:', { 
+      hasAccessToken: !!savedAccessToken, 
+      hasRefreshToken: !!savedRefreshToken 
+    });
+    
+    if (savedAccessToken && savedRefreshToken) {
+      console.log('✅ Найдены токены, проверяем валидность');
+      // Проверяем валидность токенов
+      checkTokenValidity(savedAccessToken, savedRefreshToken);
+    } else {
+      console.log('❌ Токены не найдены, начинаем с первого шага');
     }
-    return () => clearInterval(interval);
-  }, [countdown]);
+  }, [checkTokenValidity]);
+
+  // Firebase SMS hook
+  const firebaseSMS = useFirebaseSMS(
+    phone,
+    (idToken: string) => {
+      handleFirebaseVerification(idToken);
+    },
+    (error: string) => {
+      showFormMessage(error, 'error');
+    }
+  );
+
+  const handleFirebaseVerification = async (idToken: string) => {
+    setIsLoading(true);
+    try {
+      console.log('Отправляем запрос verifyFirebase с токеном:', idToken.substring(0, 20) + '...');
+      const response = await authService.verifyFirebase({ idToken });
+      console.log('Ответ verifyFirebase:', response);
+      
+      if (response.status && response.data) {
+        const { accessToken: token, refreshToken: refresh } = response.data;
+        
+        console.log('Получены токены, переходим к details');
+        
+        // Сохраняем токены в state
+        setAccessToken(token);
+        setRefreshToken(refresh);
+        
+        // Сохраняем токены в localStorage для восстановления регистрации
+        localStorage.setItem('registration_accessToken', token);
+        localStorage.setItem('registration_refreshToken', refresh);
+        
+        setCurrentStep('details');
+        showFormMessage('Номер телефона подтвержден!', 'success');
+      } else {
+        console.log('Ошибка в ответе verifyFirebase:', response);
+        showFormMessage(response.message || 'Ошибка подтверждения номера', 'error');
+      }
+    } catch (error: any) {
+      console.error('Исключение в handleFirebaseVerification:', error);
+      showFormMessage(error.message || 'Ошибка подтверждения номера', 'error');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -58,79 +155,84 @@ const Registration: React.FC = () => {
       return;
     }
 
-    if (isUserRegistered(phone, testDB)) {
-      showFormMessage('Пользователь с этим номером уже зарегистрирован', 'info');
-      return;
-    }
-
+    setIsLoading(true);
     try {
-      showFormMessage('Отправляем код...', 'info');
+      console.log('🔍 Проверяем номер телефона:', phone);
+      // Проверяем, существует ли телефон
+      const checkResponse = await authService.checkPhone({ phone });
+      console.log('📞 Ответ checkPhone:', checkResponse);
       
-      const result = await verificationService.sendCode({ phone });
-      
-      if (result.success) {
-        showFormMessage(result.message, 'success');
-        setCurrentStep('code');
-        setCountdown(30);
+      if (checkResponse.status && checkResponse.data) {
+        console.log('📱 existing:', checkResponse.data.existing);
         
-        if (result.code) {
-          console.log(result.code);
+        if (checkResponse.data.existing) {
+          // Пользователь уже существует, но возможно не завершил регистрацию
+          // Нужно получить токены для завершения регистрации
+          try {
+            console.log('👤 Пользователь найден, отправляем SMS для получения токенов');
+            showFormMessage('Пользователь найден. Отправляем код для завершения регистрации...', 'info');
+            
+            // Отправляем SMS для получения токенов
+            await firebaseSMS.sendSMS();
+            console.log('✅ SMS отправлен, переходим к шагу code');
+            setCurrentStep('code');
+          } catch (error: any) {
+            console.error('❌ Ошибка отправки SMS:', error);
+            showFormMessage('Ошибка получения доступа. Попробуйте заново.', 'error');
+          }
+        } else {
+          // Новый пользователь, отправляем SMS
+          console.log('🆕 Новый пользователь, отправляем SMS');
+          showFormMessage('Отправляем код...', 'info');
+          await firebaseSMS.sendSMS();
+          console.log('✅ SMS отправлен новому пользователю, переходим к шагу code');
+          setCurrentStep('code');
         }
       } else {
-        showFormMessage(result.message, 'error');
+        console.log('❌ Ошибка в ответе checkPhone:', checkResponse);
+        showFormMessage(checkResponse.message || 'Ошибка проверки номера', 'error');
       }
-    } catch (error) {
-      console.error('Ошибка отправки кода:', error);
-      showFormMessage('Произошла ошибка при отправке кода. Попробуйте еще раз.', 'error');
+    } catch (error: any) {
+      console.error('❌ Ошибка проверки номера:', error);
+      showFormMessage(error.message || 'Произошла ошибка при проверке номера', 'error');
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const showFormMessage = (text: string, type: 'success' | 'error' | 'info') => {
-    setMessage(text);
-    setMessageType(type);
-    setShowMessage(true);
-    
-  };
 
-  const handleCodeSubmit = (e: React.FormEvent) => {
+  const handleCodeSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     const code = codeInputs.join('');
     
-    if (code.length !== 4) {
-      showFormMessage('Введите полный 4-значный код', 'error');
+    if (code.length !== 6) {
+      showFormMessage('Введите полный 6-значный код', 'error');
       return;
     }
     
-    if (!/^\d{4}$/.test(code)) {
+    if (!/^\d{6}$/.test(code)) {
       showFormMessage('Код должен состоять только из цифр', 'error');
       return;
     }
     
-    const result = verificationService.verifyCode(phone, code);
-    
-    if (result.success) {
-      setIsCodeCorrect(true);
-      showFormMessage(result.message, 'success');
-      
-      const tempPassword = 'Temp' + Math.random().toString(36).substring(2, 8) + '!';
-      registerUser(phone, tempPassword, testDB);
-      
-      setTimeout(() => {
-        setCurrentStep('details');
-        setIsCodeCorrect(null);
-      }, 1000);
-    } else {
+    setIsLoading(true);
+    try {
+      // Верифицируем код через Firebase
+      await firebaseSMS.verifyCode(code);
+    } catch (error: any) {
       setIsCodeCorrect(false);
-      showFormMessage(result.message, 'error');
-      setCodeInputs(['', '', '', '']);
+      showFormMessage(error.message || 'Неверный код подтверждения', 'error');
+      setCodeInputs(['', '', '', '', '', '']);
       setTimeout(() => {
         setIsCodeCorrect(null);
       }, 2000);
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const handleDetailsSubmit = (e: React.FormEvent) => {
+  const handleDetailsSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!firstName.trim()) {
@@ -172,78 +274,72 @@ const Registration: React.FC = () => {
       showFormMessage('Пароли не совпадают. Проверьте правильность ввода', 'error');
       return;
     }
-    
-    testDB.users[phone].password = password;
-    testDB.users[phone].firstName = firstName;
-    testDB.users[phone].lastName = lastName;
-    
-    saveUsersToStorage(testDB.users);
-    
-    updateUserInDB(phone, testDB.users[phone]);
-    
-    localStorage.removeItem('CLEARED_ALL_DATA');
-    
-    const newUser = testDB.users[phone];
-    if (newUser) {
-      localStorage.setItem('currentUser', JSON.stringify({
-        id: newUser.id,
-        phone: phone,
-        firstName: firstName,
-        lastName: lastName
-      }));
+
+    if (!accessToken || !refreshToken) {
+      showFormMessage('Ошибка авторизации. Попробуйте заново.', 'error');
+      return;
     }
-    
-    showFormMessage('Данные сохранены!', 'success');
-    
-    setTimeout(() => {
-      setCurrentStep('success');
-    }, 1000);
+
+    setIsLoading(true);
+    try {
+      const response = await authService.register({ firstName, lastName, password }, accessToken, refreshToken);
+      
+      if (response.status && response.data) {
+        localStorage.removeItem('registration_accessToken');
+        localStorage.removeItem('registration_refreshToken');
+        
+        showFormMessage('Регистрация завершена успешно!', 'success');
+        setCurrentStep('success');
+        
+        setTimeout(() => {
+          navigate('/search-orders');
+        }, 2000);
+      } else {
+        showFormMessage(response.message || 'Ошибка завершения регистрации', 'error');
+      }
+    } catch (error: any) {
+      console.error('Ошибка регистрации:', error);
+      showFormMessage(error.message || 'Произошла ошибка при завершении регистрации', 'error');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleResendCode = async () => {
-    if (countdown > 0) return;
+    if (firebaseSMS.countdown > 0) return;
     
     try {
-      showFormMessage('Повторно отправляем код...', 'info');
-      
-      const result = await verificationService.sendCode({ phone });
-      
-      if (result.success) {
-        showFormMessage('Код был повторно отправлен на ваш номер телефона', 'success');
-        setCountdown(30);
-        
-        if (result.code) {
-          console.log(result.code);
-        }
-      } else {
-        showFormMessage(result.message, 'error');
-      }
-    } catch (error) {
-      console.error('Ошибка повторной отправки кода:', error);
-      showFormMessage('Произошла ошибка при повторной отправке кода. Попробуйте еще раз.', 'error');
+      showFormMessage('Отправляем код повторно...', 'info');
+      await firebaseSMS.sendSMS();
+    } catch (error: any) {
+      showFormMessage(error.message || 'Ошибка повторной отправки кода', 'error');
     }
   };
 
   const handleChangePhone = () => {
     setCurrentStep('phone');
     setPhone('');
-    setCodeInputs(['', '', '', '']);
-    setCountdown(0);
+    setCodeInputs(['', '', '', '', '', '']);
     setIsCodeCorrect(null);
   };
 
   const handleCodeInputChange = (index: number, value: string) => {
+    // Оставляем только цифры
+    const numericValue = value.replace(/\D/g, '');
+    
     const newInputs = [...codeInputs];
-    newInputs[index] = value;
+    newInputs[index] = numericValue;
     setCodeInputs(newInputs);
     
-    if (value && index < 3) {
+    // Автоматически переходим к следующему полю при вводе цифры
+    if (numericValue && index < 5) {
       const nextInput = document.querySelector(`input[data-index="${index + 1}"]`) as HTMLInputElement;
       if (nextInput) nextInput.focus();
     }
   };
 
   const handleCodeKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
+    // Обработка Backspace
     if (e.key === 'Backspace' && codeInputs[index] === '' && index > 0) {
       const prevInput = document.querySelector(`input[data-index="${index - 1}"]`) as HTMLInputElement;
       if (prevInput) {
@@ -254,34 +350,51 @@ const Registration: React.FC = () => {
       }
     }
     
+    // Обработка повторного Backspace для очистки всех полей
     if (e.key === 'Backspace' && codeInputs[index] !== '') {
       if (e.repeat) {
-        setCodeInputs(['', '', '', '']);
+        setCodeInputs(['', '', '', '', '', '']);
         const firstInput = document.querySelector(`input[data-index="0"]`) as HTMLInputElement;
         if (firstInput) firstInput.focus();
         e.preventDefault();
       }
     }
     
+    // Обработка Backspace в первом поле
     if (e.key === 'Backspace' && index === 0 && codeInputs[index] === '') {
-      setCodeInputs(['', '', '', '']);
+      setCodeInputs(['', '', '', '', '', '']);
+      e.preventDefault();
+    }
+    
+    // Обработка цифр - автоматический переход к следующему полю
+    if (/^\d$/.test(e.key) && codeInputs[index] !== '') {
+      const newInputs = [...codeInputs];
+      newInputs[index] = e.key;
+      setCodeInputs(newInputs);
+      
+      if (index < 5) {
+        const nextInput = document.querySelector(`input[data-index="${index + 1}"]`) as HTMLInputElement;
+        if (nextInput) nextInput.focus();
+      }
       e.preventDefault();
     }
   };
 
   const handleCodePaste = (e: React.ClipboardEvent) => {
     e.preventDefault();
-    const pastedData = e.clipboardData.getData('text').slice(0, 4);
+    const pastedData = e.clipboardData.getData('text').slice(0, 6);
     
-    if (/^\d{4}$/.test(pastedData)) {
+    if (/^\d{6}$/.test(pastedData)) {
       const newInputs = pastedData.split('');
-      setCodeInputs([...newInputs, '', '', '', ''].slice(0, 4));
+      setCodeInputs([...newInputs, '', '', '', '', '', ''].slice(0, 6));
     }
   };
 
   return (
     <>
       <Header />
+    
+      <div id="recaptcha-container" style={{ display: 'none' }}></div>
       
       <main className="main container">
         <div className="main__container">
@@ -326,8 +439,12 @@ const Registration: React.FC = () => {
                     <label className="form__label">Номер телефона</label>
                   </div>
 
-                  <button type="submit" className="form__button form__button--login">
-                    Зарегистрироваться
+                  <button 
+                    type="submit" 
+                    className="form__button form__button--login"
+                    disabled={isLoading}
+                  >
+                    {isLoading ? 'Отправка...' : 'Зарегистрироваться'}
                   </button>
                 </form>
 
@@ -384,6 +501,7 @@ const Registration: React.FC = () => {
                         data-index={index}
                         value={value}
                         onChange={(e) => handleCodeInputChange(index, e.target.value)}
+                        onFocus={(e) => e.target.select()}
                         onKeyDown={(e) => handleCodeKeyDown(index, e)}
                         autoComplete="off"
                       />
@@ -391,16 +509,20 @@ const Registration: React.FC = () => {
                   </div>
 
                   <div className="form-buttons">
-                    <button type="submit" className="form__button form__button--login">
-                      Подтвердить
+                    <button 
+                      type="submit" 
+                      className="form__button form__button--login"
+                      disabled={isLoading}
+                    >
+                      {isLoading ? 'Проверка...' : 'Подтвердить'}
                     </button>
                     <button 
                       type="button" 
                       className="form__button form__button--secondary"
                       onClick={handleResendCode}
-                      disabled={countdown > 0}
+                      disabled={firebaseSMS.countdown > 0 || isLoading}
                     >
-                      {countdown > 0 ? `Отправить код ещё раз (${countdown}s)` : 'Отправить код ещё раз'}
+                      {firebaseSMS.countdown > 0 ? `Отправить код ещё раз (${firebaseSMS.countdown}s)` : 'Отправить код ещё раз'}
                     </button>
                     <button 
                       type="button" 
@@ -498,8 +620,12 @@ const Registration: React.FC = () => {
                     />
                   </div>
 
-                  <button type="submit" className="form__button form__button--login">
-                    Завершить регистрацию
+                  <button 
+                    type="submit" 
+                    className="form__button form__button--login"
+                    disabled={isLoading}
+                  >
+                    {isLoading ? 'Завершение...' : 'Завершить регистрацию'}
                   </button>
                 </form>
 

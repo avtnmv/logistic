@@ -13,6 +13,8 @@ import Companies from './components/Companies';
 import Payments from './components/Payments';
 import AdminPanel from './components/AdminPanel';
 import { SidebarProvider } from './contexts/SidebarContext';
+import { AuthProvider } from './contexts/AuthContext';
+import { OrderProvider } from './contexts/OrderContext';
 import './App.css';
 
 
@@ -30,27 +32,31 @@ function App() {
   
   return (
     <Router basename={basename}>
-      <SidebarProvider>
-        <div className="App">
-          <RouteDebugger />
-          <AnimatePresence mode="wait">
-            <Routes>
-              <Route path="/" element={<Login />} />
-              <Route path="/registration" element={<Registration />} />
-              <Route path="/forgot-password" element={<ForgotPassword />} />
-              <Route path="/dashboard" element={<Dashboard />} />
-              <Route path="/search-orders" element={<SearchOrders />} />
-              <Route path="/homepage" element={<Homepage />} />
-              <Route path="/my-transports" element={<Homepage />} />
-              <Route path="/companies" element={<Companies />} />
-              <Route path="/payments" element={<Payments />} />
-              <Route path="/security" element={<Security />} />
-              <Route path="/profile" element={<Profile />} />
-              <Route path="/admin" element={<AdminPanel />} />
-            </Routes>
-          </AnimatePresence>
-        </div>
-      </SidebarProvider>
+      <AuthProvider>
+        <OrderProvider>
+          <SidebarProvider>
+            <div className="App">
+              <RouteDebugger />
+              <AnimatePresence mode="wait">
+                <Routes>
+                  <Route path="/" element={<Login />} />
+                  <Route path="/registration" element={<Registration />} />
+                  <Route path="/forgot-password" element={<ForgotPassword />} />
+                  <Route path="/dashboard" element={<Dashboard />} />
+                  <Route path="/search-orders" element={<SearchOrders />} />
+                  <Route path="/homepage" element={<Homepage />} />
+                  <Route path="/my-transports" element={<Homepage />} />
+                  <Route path="/companies" element={<Companies />} />
+                  <Route path="/payments" element={<Payments />} />
+                  <Route path="/security" element={<Security />} />
+                  <Route path="/profile" element={<Profile />} />
+                  <Route path="/admin" element={<AdminPanel />} />
+                </Routes>
+              </AnimatePresence>
+            </div>
+          </SidebarProvider>
+        </OrderProvider>
+      </AuthProvider>
     </Router>
   );
 }

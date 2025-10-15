@@ -6,7 +6,7 @@ import Footer from './Footer';
 import TransitionOverlay from './TransitionOverlay';
 import FormMessage from './FormMessage';
 import PasswordToggle from './PasswordToggle';
-import { getGlobalTestDB, logTestData, verifyUserPassword, updateUserInDB } from '../data/testData';
+import { useAuth } from '../contexts/AuthContext';
 import { usePasswordToggle } from '../hooks/usePasswordToggle';
 import '../css/login.css';
 
@@ -14,6 +14,7 @@ import '../css/login.css';
 const Login: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { login, isLoading, error, clearError } = useAuth();
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [showTransition, setShowTransition] = useState(false);
@@ -22,18 +23,25 @@ const Login: React.FC = () => {
   const [messageType, setMessageType] = useState<'success' | 'error' | 'info'>('info');
   const [showMessage, setShowMessage] = useState(false);
 
-  const testDB = getGlobalTestDB();
-
-  React.useEffect(() => {
-    logTestData('ТЕСТОВЫЕ ДАННЫЕ ДЛЯ ВХОДА');
-  }, [location]);
-
   const showFormMessage = (text: string, type: 'success' | 'error' | 'info') => {
     setMessage(text);
     setMessageType(type);
     setShowMessage(true);
-    
   };
+
+  // Очищаем ошибку при изменении полей
+  React.useEffect(() => {
+    if (error) {
+      clearError();
+    }
+  }, [phone, password]);
+
+  // Показываем ошибку из контекста
+  React.useEffect(() => {
+    if (error) {
+      showFormMessage(error, 'error');
+    }
+  }, [error]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -54,22 +62,8 @@ const Login: React.FC = () => {
       return;
     }
 
-    if (verifyUserPassword(phone, password, testDB)) {
-      const userData = testDB.users[phone];
-      if (userData) {
-        updateUserInDB(phone, userData);
-        
-        // Сохраняем localStorage 
-        const currentUserData = {
-          id: userData.id,
-          phone: userData.phone,
-          firstName: userData.firstName || 'Пользователь',
-          lastName: userData.lastName || '',
-          email: userData.email || ''
-        };
-        localStorage.setItem('currentUser', JSON.stringify(currentUserData));
-      }
-      
+    try {
+      await login(phone, password);
       showFormMessage('Вход выполнен успешно!', 'success');
       
       setShowTransition(true);
@@ -78,8 +72,9 @@ const Login: React.FC = () => {
         setShowTransition(false);
         navigate('/search-orders');
       }, 1000);
-    } else {
-      showFormMessage('Неверный номер телефона или пароль', 'error');
+    } catch (error: any) {
+      // Ошибка уже обработана в контексте и показана через useEffect
+      console.error('Login error:', error);
     }
   };
 
@@ -155,8 +150,12 @@ const Login: React.FC = () => {
                 />
               </div>
 
-              <button type="submit" className="form__button form__button--login">
-                Войти
+              <button 
+                type="submit" 
+                className="form__button form__button--login"
+                disabled={isLoading}
+              >
+                {isLoading ? 'Вход...' : 'Войти'}
               </button>
             </form>
 

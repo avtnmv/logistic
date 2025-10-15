@@ -4,12 +4,14 @@ import Header from './Header';
 import LeftSidebar from './LeftSidebar';
 import { useCurrentUser } from '../hooks/useCurrentUser';
 import { useSidebar } from '../contexts/SidebarContext';
+import { useOrders } from '../contexts/OrderContext';
 import '../css/left-sidebar.css';
 import '../css/homepage.css';
 
 const Homepage: React.FC = () => {
   const location = useLocation();
   const { isSidebarOpen, closeSidebar } = useSidebar();
+  const { createCargo, createTransport, loadMyCargos, loadMyTransports, myCargos, myTransports, deleteCargo, deleteTransport } = useOrders();
   const [activeForm, setActiveForm] = useState<'cards' | 'add-cargo' | 'add-transport'>('cards');
 
 
@@ -100,6 +102,7 @@ const Homepage: React.FC = () => {
     
     transportWeight: '',
     transportVolume: '',
+    vehicleType: '',
     transportLength: '',
     transportWidth: '',
     transportHeight: '',
@@ -109,7 +112,10 @@ const Homepage: React.FC = () => {
     additionalPhone: '',
     email: '',
     palletCount: '',
-    
+    loadingAddress: '',
+    unloadingAddress: '',
+    cargoNote: '',
+    transportNote: '',
     additionalInfo: ''
   });
   
@@ -272,23 +278,38 @@ const Homepage: React.FC = () => {
     setExpandedCardId(expandedCardId === cardId ? null : cardId);
   };
 
-  const handleDeleteCard = (cardId: string) => {
+  const handleDeleteCard = async (cardId: string) => {
     if (window.confirm('Вы уверены, что хотите удалить эту заявку?')) {
       setDeletingCardId(cardId);
       
-      const storageKey = `transportCards_${currentUser?.id}`;
-      const userCards = JSON.parse(localStorage.getItem(storageKey) || '[]');
-      const updatedCards = userCards.filter((card: any) => card.id !== cardId);
-      localStorage.setItem(storageKey, JSON.stringify(updatedCards));
-      
-      const allCards = JSON.parse(localStorage.getItem('transportCards') || '[]');
-      const updatedAllCards = allCards.filter((card: any) => card.id !== cardId);
-      localStorage.setItem('transportCards', JSON.stringify(updatedAllCards));
-      
-      setTimeout(() => {
-        setDeletingCardId(null);
-        setActiveForm('cards');
-      }, 300);
+      try {
+        // Пытаемся удалить как груз
+        let deleted = await deleteCargo(cardId);
+        
+        if (!deleted) {
+          // Если не удалился как груз, пытаемся как транспорт
+          deleted = await deleteTransport(cardId);
+        }
+        
+        if (deleted) {
+          console.log('✅ Заявка удалена успешно');
+          // Перезагружаем данные
+          await loadMyCargos();
+          await loadMyTransports();
+        } else {
+          console.log('❌ Ошибка удаления заявки');
+          alert('Ошибка удаления заявки');
+        }
+        
+      } catch (error) {
+        console.error('❌ Ошибка удаления заявки:', error);
+        alert('Ошибка удаления заявки: ' + (error as Error).message);
+      } finally {
+        setTimeout(() => {
+          setDeletingCardId(null);
+          setActiveForm('cards');
+        }, 300);
+      }
     }
   };
 
@@ -315,6 +336,54 @@ const Homepage: React.FC = () => {
       'tnp': 'ТНП'
     };
     return cargoTypes[value] || value;
+  };
+
+  // Функция для маппинга типов груза из формы в API типы
+  const mapCargoTypeToAPI = (formType: string): 'GENERAL' | 'PALLETS' | 'BULK' | 'LIQUID' => {
+    const typeMapping: { [key: string]: 'GENERAL' | 'PALLETS' | 'BULK' | 'LIQUID' } = {
+      'pallets': 'PALLETS',
+      'equipment': 'GENERAL',
+      'construction': 'GENERAL',
+      'metal': 'GENERAL',
+      'metal-products': 'GENERAL',
+      'pipes': 'GENERAL',
+      'food': 'GENERAL',
+      'big-bags': 'BULK',
+      'container': 'GENERAL',
+      'cement': 'BULK',
+      'bitumen': 'LIQUID',
+      'fuel': 'LIQUID',
+      'flour': 'BULK',
+      'oversized': 'GENERAL',
+      'cars': 'GENERAL',
+      'lumber': 'GENERAL',
+      'concrete': 'GENERAL',
+      'furniture': 'GENERAL',
+      'tnp': 'GENERAL'
+    };
+    return typeMapping[formType] || 'GENERAL';
+  };
+
+  // Функция для отображения API типов груза
+  const getAPICargoTypeDisplayName = (apiType: string): string => {
+    const apiTypeMapping: { [key: string]: string } = {
+      'GENERAL': 'Генеральный груз',
+      'PALLETS': 'Груз на паллетах',
+      'BULK': 'Насыпной груз',
+      'LIQUID': 'Жидкий груз'
+    };
+    return apiTypeMapping[apiType] || apiType;
+  };
+
+  // Функция для извлечения детального типа груза из заметки
+  const getDetailedCargoType = (note: string, apiCargoType: string): string => {
+    const cargoTypeMatch = note.match(/\[CargoType:([^\]]+)\]/);
+    if (cargoTypeMatch) {
+      const detailedType = cargoTypeMatch[1];
+      return getCargoTypeName(detailedType);
+    }
+    // Если детальный тип не найден, используем API тип
+    return getAPICargoTypeDisplayName(apiCargoType);
   };
 
   const getVehicleTypeName = (value: string): string => {
@@ -361,6 +430,11 @@ const Homepage: React.FC = () => {
 
   useEffect(() => {
     if (location.pathname === '/my-transports') {
+      // Загружаем данные для страницы "Мои перевозки"
+      console.log('🔄 Загружаем данные для "Мои перевозки"...');
+      console.log('👤 Текущий пользователь:', currentUser);
+      loadMyCargos();
+      loadMyTransports();
       return;
     }
 
@@ -711,6 +785,53 @@ const Homepage: React.FC = () => {
       validateDates(formData.loadingStartDate, date);
     }
   };
+
+  const resetForm = () => {
+    setFormData({
+      loadingStartDate: '',
+      loadingEndDate: '',
+      loadingCountry: '',
+      loadingRegion: '',
+      loadingCity: '',
+      unloadingCountry: '',
+      unloadingRegion: '',
+      unloadingCity: '',
+      cargoWeight: '',
+      cargoVolume: '',
+      vehicleCount: '',
+      cargoLength: '',
+      cargoWidth: '',
+      cargoHeight: '',
+      cargoPrice: '',
+      cargoCurrency: 'USD',
+      transportWeight: '',
+      transportVolume: '',
+      vehicleType: '',
+      transportLength: '',
+      transportWidth: '',
+      transportHeight: '',
+      transportPrice: '',
+      transportCurrency: 'USD',
+      additionalPhone: '',
+      email: '',
+      palletCount: '',
+      additionalInfo: '',
+      loadingAddress: '',
+      unloadingAddress: '',
+      cargoNote: '',
+      transportNote: ''
+    });
+    
+    setSelectedValues({
+      loadingType: ['all'],
+      cargoType: [],
+      vehicleType: '',
+      reloadType: '',
+      paymentMethod: '',
+      paymentTerm: '',
+      bargain: ''
+    });
+  };
   
   const validateCargoForm = () => {
     const errors: {[key: string]: boolean} = {};
@@ -820,20 +941,8 @@ const Homepage: React.FC = () => {
   };
 
 
-  const createCard = (type: 'cargo' | 'transport') => {
-
+  const createCard = async (type: 'cargo' | 'transport') => {
     if (!currentUser || !currentUser.id) {
-      if (currentUser && !currentUser.id) {
-        const fixedUser = {
-          ...currentUser,
-          id: `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
-        };
-        
-        localStorage.setItem('currentUser', JSON.stringify(fixedUser));
-        
-        window.location.reload(); 
-      }
-      
       alert('Пожалуйста, войдите в систему для создания заявки');
       return;
     }
@@ -848,81 +957,134 @@ const Homepage: React.FC = () => {
       return;
     }
 
+    try {
+      if (type === 'cargo') {
+        // Создаем груз через API
+        const selectedCargoType = selectedValues.cargoType[0] || 'equipment';
+        const apiCargoType = mapCargoTypeToAPI(selectedCargoType);
+        
+        console.log('🔍 Выбранный тип груза в форме:', selectedCargoType);
+        console.log('🔍 Маппинг в API тип:', apiCargoType);
+        console.log('🔍 selectedValues.cargoType:', selectedValues.cargoType);
+        
+        const cargoData = {
+          date_from: formData.loadingStartDate || new Date().toISOString().split('T')[0],
+          date_to: formData.loadingEndDate || new Date().toISOString().split('T')[0],
+          country_from: formData.loadingCountry || 'Украина',
+          country_to: formData.unloadingCountry || 'Польша',
+          vehicle_type: 'ANY' as const,
+          load_type: 'FULL' as const,
+          cargo_type: apiCargoType,
+          allow_partial_load: false,
+          weight_t: (parseFloat(formData.cargoWeight) || 1).toString(),
+          volume_m3: (parseFloat(formData.cargoVolume) || 1).toString(),
+          cars_count: parseInt(formData.vehicleCount) || 1,
+          pallets_count: 0,
+          has_dimensions: !!(formData.cargoLength && formData.cargoWidth && formData.cargoHeight),
+          length_m: formData.cargoLength ? parseFloat(formData.cargoLength).toString() : undefined,
+          width_m: formData.cargoWidth ? parseFloat(formData.cargoWidth).toString() : undefined,
+          height_m: formData.cargoHeight ? parseFloat(formData.cargoHeight).toString() : undefined,
+          price_currency: (formData.cargoCurrency || 'USD') as 'USD' | 'EUR' | 'UAH' | 'PLN' | 'RUB',
+          price_amount: (parseFloat(formData.cargoPrice) || 100).toString(),
+          payment_method: 'BANK_TRANSFER' as const,
+          payment_term: 'PREPAID' as const,
+          bargain: 'ALLOWED' as const,
+          contact_extra_phone: currentUser?.phone || '',
+          note: `${formData.cargoNote || ''} [CargoType:${selectedCargoType}]`, // Сохраняем детальный тип в заметке
+          points: [
+            {
+              type: 'PICKUP' as const,
+              country: formData.loadingCountry || 'Украина',
+              region: formData.loadingRegion || 'Киевская',
+              city: formData.loadingCity || 'Киев',
+              address: formData.loadingAddress || ''
+            },
+            {
+              type: 'DROPOFF' as const,
+              country: formData.unloadingCountry || 'Польша',
+              region: formData.unloadingRegion || 'Мазовецкое',
+              city: formData.unloadingCity || 'Варшава',
+              address: formData.unloadingAddress || ''
+            }
+          ]
+        };
 
-    const cardData = {
-      id: `card_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-      type: type,
-      createdAt: new Date().toISOString(),
-      status: 'Активна',
-      userId: currentUser?.id || '',
-      ...formData,
-      ...selectedValues,
-      mainPhone: currentUser?.phone || '',
-      userName: currentUser ? `${currentUser.firstName} ${currentUser.lastName}` : 'Пользователь'
-    };
-    
-    setCurrentCard(cardData);
-    setShowCard(true);
-    
-    const storageKey = `transportCards_${currentUser.id}`;
-    const existingCards = JSON.parse(localStorage.getItem(storageKey) || '[]');
-    
-    existingCards.push(cardData);
-    localStorage.setItem(storageKey, JSON.stringify(existingCards));
-    
-    const allCards = JSON.parse(localStorage.getItem('transportCards') || '[]');
-    allCards.push(cardData);
-    localStorage.setItem('transportCards', JSON.stringify(allCards));
-    
-    const updatedUserCards = JSON.parse(localStorage.getItem(storageKey) || '[]');
-    localStorage.setItem(storageKey, JSON.stringify(updatedUserCards));
-    
-    setActiveForm('cards');
-    
-    window.location.href = '/homepage';
-    
-    setFormData({
-      loadingStartDate: '',
-      loadingEndDate: '',
-      loadingCountry: '',
-      loadingRegion: '',
-      loadingCity: '',
-      unloadingCountry: '',
-      unloadingRegion: '',
-      unloadingCity: '',
-      cargoWeight: '',
-      cargoVolume: '',
-      vehicleCount: '',
-      cargoLength: '',
-      cargoWidth: '',
-      cargoHeight: '',
-      cargoPrice: '',
-      cargoCurrency: 'USD',
-      transportWeight: '',
-      transportVolume: '',
-      transportLength: '',
-      transportWidth: '',
-      transportHeight: '',
-      transportPrice: '',
-      transportCurrency: 'USD',
-      additionalPhone: '',
-      email: '',
-      palletCount: '',
-      additionalInfo: ''
-    });
-    setSelectedValues({
-      loadingType: ['all'],
-      cargoType: [],
-      vehicleType: '',
-      reloadType: '',
-      paymentMethod: '',
-      paymentTerm: '',
-      bargain: ''
-    });
-    setShowCargoDimensions(false);
-    setShowTransportDimensions(false);
-    setLoadingCity('');
-    setUnloadingCity('');
+        console.log('🚛 Создаем груз через API:', cargoData);
+        const response = await createCargo(cargoData);
+        console.log('📡 Ответ API:', response);
+        
+        if (response.status && response.data) {
+          console.log('✅ Груз создан успешно:', response.data);
+          alert('Груз успешно создан!');
+          // Перезагружаем список грузов
+          await loadMyCargos();
+        } else {
+          console.error('❌ Ошибка создания груза:', response);
+          alert('Ошибка создания груза: ' + (response.message || 'Неизвестная ошибка'));
+        }
+      } else if (type === 'transport') {
+        // Создаем транспорт через API
+        const transportData = {
+          date_from: formData.loadingStartDate || new Date().toISOString().split('T')[0],
+          date_to: formData.loadingEndDate || new Date().toISOString().split('T')[0],
+          country_from: formData.loadingCountry || 'Украина',
+          country_to: formData.unloadingCountry || 'Польша',
+          vehicle_type: (formData.vehicleType || 'ANY') as 'ANY' | 'TENT' | 'REFRIGERATOR' | 'VAN' | 'PLATFORM',
+          cars_count: parseInt(formData.vehicleCount) || 1,
+          weight_t: parseFloat(formData.transportWeight) || 10,
+          volume_m3: parseFloat(formData.transportVolume) || 10,
+          has_dimensions: !!(formData.cargoLength && formData.cargoWidth && formData.cargoHeight),
+          length_m: formData.cargoLength ? parseFloat(formData.cargoLength) : undefined,
+          width_m: formData.cargoWidth ? parseFloat(formData.cargoWidth) : undefined,
+          height_m: formData.cargoHeight ? parseFloat(formData.cargoHeight) : undefined,
+          price_currency: (formData.cargoCurrency || 'USD') as 'USD' | 'EUR' | 'UAH' | 'PLN' | 'RUB',
+          price_amount: parseFloat(formData.cargoPrice) || 500,
+          payment_method: 'BANK_TRANSFER' as const,
+          payment_term: 'PREPAID' as const,
+          bargain: 'ALLOWED' as const,
+          contact_extra_phone: currentUser?.phone || '',
+          note: formData.transportNote || '',
+          points: [
+            {
+              type: 'DEPARTURE' as const,
+              country: formData.loadingCountry || 'Украина',
+              region: formData.loadingRegion || 'Киевская',
+              city: formData.loadingCity || 'Киев',
+              address: formData.loadingAddress || ''
+            },
+            {
+              type: 'ARRIVAL' as const,
+              country: formData.unloadingCountry || 'Польша',
+              region: formData.unloadingRegion || 'Мазовецкое',
+              city: formData.unloadingCity || 'Варшава',
+              address: formData.unloadingAddress || ''
+            }
+          ]
+        };
+
+        console.log('🚚 Создаем транспорт через API:', transportData);
+        const response = await createTransport(transportData);
+        console.log('📡 Ответ API:', response);
+        
+        if (response.status && response.data) {
+          console.log('✅ Транспорт создан успешно:', response.data);
+          alert('Транспорт успешно создан!');
+          // Перезагружаем список транспорта
+          await loadMyTransports();
+        } else {
+          console.error('❌ Ошибка создания транспорта:', response);
+          alert('Ошибка создания транспорта: ' + (response.message || 'Неизвестная ошибка'));
+        }
+      }
+      
+      // Очищаем форму и возвращаемся к карточкам
+      setActiveForm('cards');
+      resetForm();
+      
+    } catch (error: any) {
+      console.error('❌ Ошибка создания заявки:', error);
+      alert('Ошибка создания заявки: ' + (error.message || 'Неизвестная ошибка'));
+    }
     setDateError('');
   };
 
@@ -2474,35 +2636,52 @@ const Homepage: React.FC = () => {
                 );
               }
               
-              const storageKey = `transportCards_${currentUser.id}`;
-              let userCards = JSON.parse(localStorage.getItem(storageKey) || '[]');
+              // Используем данные из хука, который уже вызван на верхнем уровне
+              const allMyOrders = [...(myCargos || []), ...(myTransports || [])];
               
-              if (userCards.length === 0) {
-                const allCards = JSON.parse(localStorage.getItem('transportCards') || '[]');
-                
-                let migratedCards = allCards.filter((card: any) => card.userId === currentUser.id);
-                
-                if (migratedCards.length === 0) {
-                  migratedCards = allCards.filter((card: any) => card.mainPhone === currentUser.phone);
-                }
-                
-                if (migratedCards.length === 0) {
-                  const userName = `${currentUser.firstName} ${currentUser.lastName}`;
-                  migratedCards = allCards.filter((card: any) => card.userName === userName);
-                }
-                
-                if (migratedCards.length > 0) {
-                  const updatedCards = migratedCards.map((card: any) => ({
-                    ...card,
-                    userId: currentUser.id
-                  }));
-                  
-                  localStorage.setItem(storageKey, JSON.stringify(updatedCards));
-                  userCards = updatedCards;
-                }
-              }
+              console.log('📋 Мои заявки:', allMyOrders.length);
+              console.log('📦 Мои грузы:', myCargos?.length || 0);
+              console.log('🚚 Мой транспорт:', myTransports?.length || 0);
               
-              if (userCards.length === 0) {
+              // Функция для преобразования API данных в формат карточки
+              const convertOrderToCard = (order: any) => {
+                console.log('🔍 Конвертируем заявку:', order.id, 'cargo_type:', order.cargo_type);
+                
+                // API не возвращает type в points, используем порядок: первый = загрузка/отправление, второй = разгрузка/прибытие
+                const pickupPoint = order.points?.[0]; // Первая точка
+                const dropoffPoint = order.points?.[1]; // Вторая точка
+                
+                return {
+                  id: order.id,
+                  type: order.cargo_type ? 'cargo' : 'transport',
+                  loadingCity: pickupPoint?.city || '',
+                  loadingRegion: pickupPoint?.region || '',
+                  loadingCountry: pickupPoint?.country || '',
+                  unloadingCity: dropoffPoint?.city || '',
+                  unloadingRegion: dropoffPoint?.region || '',
+                  unloadingCountry: dropoffPoint?.country || '',
+                  createdAt: order.created_at,
+                  cargoPrice: order.price_amount?.toString() || '0',
+                  cargoCurrency: order.price_currency || 'USD',
+                  cargoWeight: order.weight_t?.toString() || '0',
+                  cargoVolume: order.volume_m3?.toString() || '0',
+                  vehicleType: order.vehicle_type || 'ANY',
+                  cargoType: getDetailedCargoType(order.note || '', order.cargo_type || 'GENERAL'), // Используем детальный тип из заметки
+                  paymentMethod: order.payment_method === 'BANK_TRANSFER' ? 'cashless' : 
+                                order.payment_method === 'CARD' ? 'card' : 'cash',
+                  paymentTerm: order.payment_term === 'PREPAID' ? 'prepayment' :
+                              order.payment_term === 'ON_UNLOAD' ? 'unloading' :
+                              order.payment_term === 'POSTPAID' ? 'deferred' : 'prepayment',
+                  palletCount: order.pallets_count || 0,
+                  vehicleCount: order.cars_count || 1,
+                  additionalPhone: order.contact_extra_phone || '',
+                  additionalInfo: order.note || ''
+                };
+              };
+              
+              const convertedOrders = allMyOrders.map(convertOrderToCard);
+              
+              if (convertedOrders.length === 0) {
                 return (
                   <div className="no-cards">
                     <p>У вас пока нет созданных заявок. Создайте первую заявку, нажав "Добавить груз" или "Добавить транспорт" в левом меню.</p>
@@ -2512,7 +2691,7 @@ const Homepage: React.FC = () => {
               
               return (
                 <div className="cards-grid">
-                  {userCards.map((card: any, index: number) => (
+                  {convertedOrders.map((card: any, index: number) => (
                     <div 
                       key={card.id} 
                       className={`transport-card ${deletingCardId === card.id ? 'deleting' : ''}`}
@@ -2526,13 +2705,15 @@ const Homepage: React.FC = () => {
                                 if (card.loadingCity) loadingParts.push(card.loadingCity);
                                 if (card.loadingRegion) loadingParts.push(card.loadingRegion);
                                 if (card.loadingCountry) loadingParts.push(card.loadingCountry);
-                                return loadingParts.length > 0 ? loadingParts.join(', ') : 'Не указано';
-                              })()} → {(() => {
+                                const loadingStr = loadingParts.length > 0 ? loadingParts.join(', ') : 'Не указано';
+                                
                                 const unloadingParts = [];
                                 if (card.unloadingCity) unloadingParts.push(card.unloadingCity);
                                 if (card.unloadingRegion) unloadingParts.push(card.unloadingRegion);
                                 if (card.unloadingCountry) unloadingParts.push(card.unloadingCountry);
-                                return unloadingParts.length > 0 ? unloadingParts.join(', ') : 'Не указано';
+                                const unloadingStr = unloadingParts.length > 0 ? unloadingParts.join(', ') : 'Не указано';
+                                
+                                return `${loadingStr} → ${unloadingStr}`;
                               })()}
                             </div>
                             <div className="transport-card__type-badge">
@@ -2572,8 +2753,8 @@ const Homepage: React.FC = () => {
                                 <path d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                               </svg>
                               {Array.isArray(card.cargoType) ? 
-                                card.cargoType.map((type: string) => getCargoTypeName(type)).join(', ') :
-                                getCargoTypeName(card.cargoType) || 'Не указано'
+                                card.cargoType.map((type: string) => type).join(', ') :
+                                card.cargoType || 'Не указано'
                               }
                             </div>
                           </div>
@@ -2617,7 +2798,7 @@ const Homepage: React.FC = () => {
                               </svg>
                               {card.cargoVolume || card.transportVolume || '86'}м³
                             </div>
-                            {card.palletCount && (
+                            {card.palletCount > 0 && (
                               <div className="transport-card__spec-item">
                                 <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
                                   <path d="M2 10.667h8.003L9.053 4H2.95zm4.001-8a.65.65 0 0 0 .476-.192A.64.64 0 0 0 6.668 2a.65.65 0 0 0-.192-.475.64.64 0 0 0-.475-.192.64.64 0 0 0-.474.192.65.65 0 0 0-.193.475q0 .283.193.475A.64.64 0 0 0 6 2.667m1.884 0h1.168q.5 0 .866.333.367.333.45.817l.951 6.666q.084.6-.308 1.059a1.26 1.26 0 0 1-1.01.458H2q-.617 0-1.01-.458a1.29 1.29 0 0 1-.307-1.059l.95-6.666q.084-.484.45-.817.367-.333.867-.333h1.167a4 4 0 0 1-.083-.325A1.7 1.7 0 0 1 4.001 2q0-.834.583-1.417A1.93 1.93 0 0 1 6.001 0 1.93 1.93 0 0 1 7.42.583q.583.584.583 1.417q0 .183-.033.342t-.084.325" fill="#717680"/>
@@ -2718,6 +2899,24 @@ const Homepage: React.FC = () => {
                                     <span className="transport-card__contact-value">{card.additionalPhone}</span>
                                   </div>
                                 )}
+                                {card.palletCount > 0 && (
+                                  <div className="transport-card__contact-row">
+                                    <span className="transport-card__contact-label">Количество паллет:</span>
+                                    <span className="transport-card__contact-value">{card.palletCount}</span>
+                                  </div>
+                                )}
+                                {card.additionalInfo && !card.additionalInfo.includes('[CargoType:') && (
+                                  <div className="transport-card__contact-row">
+                                    <span className="transport-card__contact-label">Комментарий:</span>
+                                    <span className="transport-card__contact-value">{card.additionalInfo}</span>
+                                  </div>
+                                )}
+                                {card.additionalInfo && card.additionalInfo.includes('[CargoType:') && (
+                                  <div className="transport-card__contact-row">
+                                    <span className="transport-card__contact-label">Комментарий:</span>
+                                    <span className="transport-card__contact-value">{card.additionalInfo.replace(/\[CargoType:[^\]]+\]/g, '').trim()}</span>
+                                  </div>
+                                )}
                               </div>
                               
                               <hr className="transport-card__divider" />
@@ -2731,7 +2930,7 @@ const Homepage: React.FC = () => {
                                      card.paymentTerm === 'deferred' ? 'Отсрочка платежа' : 'Не указано'}
                                   </span>
                                 </div>
-                                {card.vehicleCount && (
+                                {card.vehicleCount > 0 && (
                                   <div className="transport-card__info-row">
                                     <span className="transport-card__info-label">Количество автомобилей:</span>
                                     <span className="transport-card__info-value">
@@ -2739,7 +2938,7 @@ const Homepage: React.FC = () => {
                                     </span>
                                   </div>
                                 )}
-                                {card.palletCount && (
+                                {card.palletCount > 0 && (
                                   <div className="transport-card__info-row">
                                     <span className="transport-card__info-label">Количество паллет:</span>
                                     <span className="transport-card__info-value">

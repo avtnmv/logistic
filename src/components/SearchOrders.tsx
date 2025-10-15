@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCurrentUser } from '../hooks/useCurrentUser';
 import { useSidebar } from '../contexts/SidebarContext';
+import { useOrders } from '../contexts/OrderContext';
 import Header from './Header';
 import LeftSidebar from './LeftSidebar';
 import '../css/left-sidebar.css';
@@ -18,6 +19,7 @@ interface CurrentUser {
 const SearchOrders: React.FC = () => {
   const { isSidebarOpen, closeSidebar } = useSidebar();
   const currentUser = useCurrentUser();
+  const { cargos, transports, loadCargos, loadTransports } = useOrders();
   const navigate = useNavigate();
   
   const [activePage, setActivePage] = useState<'all' | 'cargo' | 'transport'>('all');
@@ -106,55 +108,148 @@ const SearchOrders: React.FC = () => {
     }
   ];
 
-  const loadAllOrders = () => {
-    setLoading(true);
-    const orders: any[] = [];
+  const processOrders = useCallback(() => {
+    console.log('🔄 Обрабатываем заявки...');
+    console.log('🔍 Текущий пользователь:', currentUser);
     
-    for (let i = 0; i < localStorage.length; i++) {
-      const key = localStorage.key(i);
-      if (key && key.startsWith('transportCards_')) {
-        const userCards = JSON.parse(localStorage.getItem(key) || '[]');
-        userCards.forEach((card: any) => {
-          if (card.type === 'cargo') {
-            orders.push({
-              ...card,
-              id: `${card.id}_${key}`,
-              userName: card.userName || 'Пользователь',
-              createdAt: card.createdAt || new Date().toISOString()
-            });
-          }
+    // Объединяем все заявки
+    const allApiOrders: any[] = [];
+      
+      // Добавляем грузы
+      (cargos || []).forEach(cargo => {
+        // API не возвращает type в points, используем порядок: первый = загрузка, второй = разгрузка
+        const pickupPoint = cargo.points?.[0]; // Первая точка = загрузка
+        const dropoffPoint = cargo.points?.[1]; // Вторая точка = разгрузка
+        
+        allApiOrders.push({
+          ...cargo,
+          type: 'cargo',
+          userName: `${cargo.user.first_name || 'Пользователь'} ${cargo.user.last_name || ''}`.trim(),
+          createdAt: cargo.created_at,
+          // Преобразуем данные для совместимости с UI
+          loadingCountry: pickupPoint?.country || 'Украина',
+          loadingRegion: pickupPoint?.region || 'Киевская',
+          loadingCity: pickupPoint?.city || 'Киев',
+          unloadingCountry: dropoffPoint?.country || 'Польша',
+          unloadingRegion: dropoffPoint?.region || 'Мазовецкое',
+          unloadingCity: dropoffPoint?.city || 'Варшава',
+          cargoWeight: cargo.weight_t?.toString() || '',
+          cargoVolume: cargo.volume_m3?.toString() || '',
+          cargoPrice: cargo.price_amount?.toString() || '',
+          cargoCurrency: cargo.price_currency || 'USD',
+          palletCount: cargo.pallets_count || 0,
+          vehicleCount: cargo.cars_count || 1, // Количество автомобилей для груза
+          paymentMethod: cargo.payment_method === 'BANK_TRANSFER' ? 'cashless' : 
+                        cargo.payment_method === 'CARD' ? 'card' : 'cash',
+          paymentTerm: cargo.payment_term === 'PREPAID' ? 'prepayment' :
+                      cargo.payment_term === 'ON_UNLOAD' ? 'unloading' :
+                      cargo.payment_term === 'POSTPAID' ? 'deferred' : 'prepayment',
+          status: 'Активна',
+          // Контактная информация
+          phone: cargo.user?.phone || '',
+          email: cargo.user?.email || '',
+          additionalPhone: cargo.contact_extra_phone || '',
+          note: cargo.note || ''
         });
-      }
-    }
-    
-    for (let i = 0; i < localStorage.length; i++) {
-      const key = localStorage.key(i);
-      if (key && key.startsWith('transportCards_')) {
-        const userCards = JSON.parse(localStorage.getItem(key) || '[]');
-        userCards.forEach((card: any) => {
-          if (card.type === 'transport') {
-            orders.push({
-              ...card,
-              id: `${card.id}_${key}`,
-              userName: card.userName || 'Пользователь',
-              createdAt: card.createdAt || new Date().toISOString()
-            });
-          }
+      });
+      
+      // Добавляем транспорт
+      (transports || []).forEach(transport => {
+        // API не возвращает type в points, используем порядок: первый = отправление, второй = прибытие
+        const departurePoint = transport.points?.[0]; // Первая точка = отправление
+        const arrivalPoint = transport.points?.[1]; // Вторая точка = прибытие
+        
+        allApiOrders.push({
+          ...transport,
+          type: 'transport',
+          userName: `${transport.user.first_name || 'Пользователь'} ${transport.user.last_name || ''}`.trim(),
+          createdAt: transport.created_at,
+          // Преобразуем данные для совместимости с UI
+          loadingCountry: departurePoint?.country || '',
+          loadingRegion: departurePoint?.region || '',
+          loadingCity: departurePoint?.city || '',
+          unloadingCountry: arrivalPoint?.country || '',
+          unloadingRegion: arrivalPoint?.region || '',
+          unloadingCity: arrivalPoint?.city || '',
+          transportWeight: transport.weight_t?.toString() || '',
+          transportVolume: transport.volume_m3?.toString() || '',
+          vehicleType: transport.vehicle_type || '',
+          vehicleCount: parseInt(transport.cars_count?.toString() || '1'), // Количество автомобилей для транспорта
+          cargoPrice: transport.price_amount?.toString() || '',
+          cargoCurrency: transport.price_currency || 'USD',
+          palletCount: 0, // У транспорта нет паллет
+          paymentMethod: transport.payment_method === 'BANK_TRANSFER' ? 'cashless' : 
+                        transport.payment_method === 'CARD' ? 'card' : 'cash',
+          paymentTerm: transport.payment_term === 'PREPAID' ? 'prepayment' :
+                      transport.payment_term === 'ON_UNLOAD' ? 'unloading' :
+                      transport.payment_term === 'POSTPAID' ? 'deferred' : 'prepayment',
+          status: 'Активна',
+          // Контактная информация
+          phone: transport.user?.phone || '',
+          email: transport.user?.email || '',
+          additionalPhone: transport.contact_extra_phone || '',
+          note: transport.note || ''
         });
+      });
+      
+      // Фильтруем заявки текущего пользователя (не показываем свои)
+      const filteredOrders = allApiOrders.filter(order => 
+        order.user_id !== currentUser?.id
+      );
+      
+      console.log('✅ Загружено заявок:', filteredOrders.length);
+      console.log('📦 Грузы:', cargos?.length || 0);
+      console.log('🚚 Транспорт:', transports?.length || 0);
+      console.log('👤 Текущий пользователь ID:', currentUser?.id);
+      console.log('🔍 Все заявки до фильтрации:', allApiOrders.length);
+      console.log('🔍 Заявки после фильтрации:', filteredOrders.length);
+      console.log('🔍 Данные cargos:', cargos);
+      console.log('🔍 Данные transports:', transports);
+      
+      // Отладка фильтрации
+      if (allApiOrders.length > 0) {
+        console.log('🔍 Первая заявка user_id:', allApiOrders[0].user_id);
+        console.log('🔍 Текущий пользователь ID:', currentUser?.id);
+        console.log('🔍 Совпадают ли ID?', allApiOrders[0].user_id === currentUser?.id);
       }
-    }
-    
-    const filteredOrders = orders.filter(order => 
-      !order.id.includes(`_transportCards_${currentUser?.id}`)
-    );
-    
+      
     setAllOrders(filteredOrders);
-    setLoading(false);
+  }, [cargos, transports, currentUser?.id]);
+
+  const loadAllOrders = async () => {
+    setLoading(true);
+    try {
+      console.log('🔄 Загружаем заявки через API...');
+      console.log('🔍 Текущий пользователь:', currentUser);
+      
+      // Загружаем грузы и транспорт параллельно
+      const [cargosResult, transportsResult] = await Promise.all([
+        loadCargos(),
+        loadTransports()
+      ]);
+      
+      console.log('📡 Результат загрузки грузов:', cargosResult);
+      console.log('📡 Результат загрузки транспорта:', transportsResult);
+      
+    } catch (error) {
+      console.error('❌ Ошибка загрузки заявок:', error);
+      alert('Ошибка загрузки заявок: ' + (error as Error).message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
     loadAllOrders();
   }, [currentUser?.id]);
+
+  useEffect(() => {
+    // Обновляем отображение заявок когда загружаются новые данные
+    if (cargos !== undefined && transports !== undefined) {
+      console.log('🔄 Обновляем отображение заявок...');
+      processOrders();
+    }
+  }, [cargos, transports]);
 
   useEffect(() => {
     document.body.style.backgroundColor = 'rgb(245, 245, 245)';
@@ -210,6 +305,10 @@ const SearchOrders: React.FC = () => {
 
   const getCargoTypeDisplayName = (type: string) => {
     const cargoTypes: { [key: string]: string } = {
+      'GENERAL': 'Генеральный груз',
+      'PALLETS': 'Груз на паллетах',
+      'BULK': 'Насыпной груз',
+      'LIQUID': 'Жидкий груз',
       'pallets': 'Груз на паллетах',
       'equipment': 'Оборудование',
       'construction': 'Стройматериалы',
@@ -255,8 +354,24 @@ const SearchOrders: React.FC = () => {
     return type;
   };
 
+  // Функция для извлечения детального типа груза из заметки
+  const getDetailedCargoType = (note: string, apiCargoType: string): string => {
+    const cargoTypeMatch = note.match(/\[CargoType:([^\]]+)\]/);
+    if (cargoTypeMatch) {
+      const detailedType = cargoTypeMatch[1];
+      return getCargoTypeDisplayName(detailedType);
+    }
+    // Если детальный тип не найден, используем API тип
+    return getCargoTypeDisplayName(apiCargoType);
+  };
+
   const getVehicleTypeName = (type: string) => {
     const types: { [key: string]: string } = {
+      'ANY': 'Любой',
+      'TENT': 'Тент',
+      'REFRIGERATOR': 'Рефрижератор',
+      'VAN': 'Фургон',
+      'PLATFORM': 'Платформа',
       'tent': 'Тент',
       'isotherm': 'Изотерм',
       'refrigerator': 'Рефрижератор',
@@ -751,10 +866,11 @@ const SearchOrders: React.FC = () => {
                                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                                     <path d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                                   </svg>
-                                  {Array.isArray(order.cargoType) ? 
-                                    order.cargoType.map((type: string) => getCargoTypeDisplayName(type)).join(', ') :
-                                    getCargoTypeDisplayName(order.cargoType) || 'Не указано'
-                                  }
+                                  {(() => {
+                                    const cargoType = getDetailedCargoType(order.note || '', order.cargo_type || order.cargoType || 'GENERAL');
+                                    console.log('🔍 SearchOrders cargo_type для заявки', order.id, ':', cargoType);
+                                    return cargoType;
+                                  })()}
                                 </div>
                               </div>
                               <div className="transport-card__payment-price">
@@ -797,7 +913,7 @@ const SearchOrders: React.FC = () => {
                                   </svg>
                                   {order.cargoVolume || order.transportVolume || order.volume || '86'}м³
                                 </div>
-                                {order.palletCount && (
+                                {order.palletCount > 0 && (
                                   <div className="transport-card__spec-item">
                                     <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
                                       <path d="M2 10.667h8.003L9.053 4H2.95zm4.001-8a.65.65 0 0 0 .476-.192A.64.64 0 0 0 6.668 2a.65.65 0 0 0-.192-.475.64.64 0 0 0-.475-.192.64.64 0 0 0-.474.192.65.65 0 0 0-.193.475q0 .283.193.475A.64.64 0 0 0 6 2.667m1.884 0h1.168q.5 0 .866.333.367.333.45.817l.951 6.666q.084.6-.308 1.059a1.26 1.26 0 0 1-1.01.458H2q-.617 0-1.01-.458a1.29 1.29 0 0 1-.307-1.059l.95-6.666q.084-.484.45-.817.367-.333.867-.333h1.167a4 4 0 0 1-.083-.325A1.7 1.7 0 0 1 4.001 2q0-.834.583-1.417A1.93 1.93 0 0 1 6.001 0 1.93 1.93 0 0 1 7.42.583q.583.584.583 1.417q0 .183-.033.342t-.084.325" fill="#717680"/>
@@ -879,6 +995,24 @@ const SearchOrders: React.FC = () => {
                                         <span className="transport-card__contact-value">{order.additionalPhone}</span>
                                       </div>
                                     )}
+                                    {order.palletCount > 0 && (
+                                      <div className="transport-card__contact-row">
+                                        <span className="transport-card__contact-label">Количество паллет:</span>
+                                        <span className="transport-card__contact-value">{order.palletCount}</span>
+                                      </div>
+                                    )}
+                                    {order.note && !order.note.includes('[CargoType:') && (
+                                      <div className="transport-card__contact-row">
+                                        <span className="transport-card__contact-label">Комментарий:</span>
+                                        <span className="transport-card__contact-value">{order.note}</span>
+                                      </div>
+                                    )}
+                                    {order.note && order.note.includes('[CargoType:') && (
+                                      <div className="transport-card__contact-row">
+                                        <span className="transport-card__contact-label">Комментарий:</span>
+                                        <span className="transport-card__contact-value">{order.note.replace(/\[CargoType:[^\]]+\]/g, '').trim()}</span>
+                                      </div>
+                                    )}
                                   </div>
                                   
                                   <hr className="transport-card__divider" />
@@ -893,7 +1027,7 @@ const SearchOrders: React.FC = () => {
                                          order.paymentTerms || 'Не указано'}
                                       </span>
                                     </div>
-                                    {order.vehicleCount && (
+                                    {order.vehicleCount > 0 && (
                                       <div className="transport-card__info-row">
                                         <span className="transport-card__info-label">Количество автомобилей:</span>
                                         <span className="transport-card__info-value">
@@ -901,7 +1035,7 @@ const SearchOrders: React.FC = () => {
                                         </span>
                                       </div>
                                     )}
-                                    {order.palletCount && (
+                                    {order.palletCount > 0 && (
                                       <div className="transport-card__info-row">
                                         <span className="transport-card__info-label">Количество паллет:</span>
                                         <span className="transport-card__info-value">
@@ -1472,10 +1606,11 @@ const SearchOrders: React.FC = () => {
                                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                                         <path d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                                       </svg>
-                                      {Array.isArray(order.cargoType) ? 
-                                        order.cargoType.map((type: string) => getCargoTypeDisplayName(type)).join(', ') :
-                                        getCargoTypeDisplayName(order.cargoType) || 'Не указано'
-                                      }
+                                      {(() => {
+                                        const cargoType = getDetailedCargoType(order.note || '', order.cargo_type || order.cargoType || 'GENERAL');
+                                        console.log('🔍 SearchOrders cargo_type для заявки', order.id, ':', cargoType);
+                                        return cargoType;
+                                      })()}
                                     </div>
                                   </div>
                                   <div className="transport-card__payment-price">
@@ -1518,7 +1653,7 @@ const SearchOrders: React.FC = () => {
                                       </svg>
                                       {order.cargoVolume || order.transportVolume || order.volume || '86'}м³
                                     </div>
-                                    {order.palletCount && (
+                                    {order.palletCount > 0 && (
                                       <div className="transport-card__spec-item">
                                         <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
                                           <path d="M2 10.667h8.003L9.053 4H2.95zm4.001-8a.65.65 0 0 0 .476-.192A.64.64 0 0 0 6.668 2a.65.65 0 0 0-.192-.475.64.64 0 0 0-.475-.192.64.64 0 0 0-.474.192.65.65 0 0 0-.193.475q0 .283.193.475A.64.64 0 0 0 6 2.667m1.884 0h1.168q.5 0 .866.333.367.333.45.817l.951 6.666q.084.6-.308 1.059a1.26 1.26 0 0 1-1.01.458H2q-.617 0-1.01-.458a1.29 1.29 0 0 1-.307-1.059l.95-6.666q.084-.484.45-.817.367-.333.867-.333h1.167a4 4 0 0 1-.083-.325A1.7 1.7 0 0 1 4.001 2q0-.834.583-1.417A1.93 1.93 0 0 1 6.001 0 1.93 1.93 0 0 1 7.42.583q.583.584.583 1.417q0 .183-.033.342t-.084.325" fill="#717680"/>
@@ -1600,6 +1735,24 @@ const SearchOrders: React.FC = () => {
                                             <span className="transport-card__contact-value">{order.additionalPhone}</span>
                                           </div>
                                         )}
+                                        {order.palletCount > 0 && (
+                                          <div className="transport-card__contact-row">
+                                            <span className="transport-card__contact-label">Количество паллет:</span>
+                                            <span className="transport-card__contact-value">{order.palletCount}</span>
+                                          </div>
+                                        )}
+                                        {order.note && !order.note.includes('[CargoType:') && (
+                                          <div className="transport-card__contact-row">
+                                            <span className="transport-card__contact-label">Комментарий:</span>
+                                            <span className="transport-card__contact-value">{order.note}</span>
+                                          </div>
+                                        )}
+                                        {order.note && order.note.includes('[CargoType:') && (
+                                          <div className="transport-card__contact-row">
+                                            <span className="transport-card__contact-label">Комментарий:</span>
+                                            <span className="transport-card__contact-value">{order.note.replace(/\[CargoType:[^\]]+\]/g, '').trim()}</span>
+                                          </div>
+                                        )}
                                       </div>
                                       
                                       <hr className="transport-card__divider" />
@@ -1614,7 +1767,7 @@ const SearchOrders: React.FC = () => {
                                              order.paymentTerms || 'Не указано'}
                                           </span>
                                         </div>
-                                        {order.vehicleCount && (
+                                        {order.vehicleCount > 0 && (
                                           <div className="transport-card__info-row">
                                             <span className="transport-card__info-label">Количество автомобилей:</span>
                                             <span className="transport-card__info-value">
@@ -1622,7 +1775,7 @@ const SearchOrders: React.FC = () => {
                                             </span>
                                           </div>
                                         )}
-                                        {order.palletCount && (
+                                        {order.palletCount > 0 && (
                                           <div className="transport-card__info-row">
                                             <span className="transport-card__info-label">Количество паллет:</span>
                                             <span className="transport-card__info-value">
