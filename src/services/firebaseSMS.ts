@@ -2,10 +2,8 @@ import { useState, useEffect } from 'react';
 import { RecaptchaVerifier, signInWithPhoneNumber } from 'firebase/auth';
 import { auth } from '../config/firebase';
 
-// Флаг для использования mock SMS (временно, пока не настроен биллинг Firebase)
 const USE_MOCK_SMS = true;
 
-// Интерфейс для Firebase SMS верификации
 interface FirebaseSMSProps {
   phone: string;
   onVerificationSuccess: (idToken: string) => void;
@@ -13,7 +11,6 @@ interface FirebaseSMSProps {
   disabled?: boolean;
 }
 
-// Хук для использования Firebase SMS
 export const useFirebaseSMS = (phone: string, onVerificationSuccess: (idToken: string) => void, onError: (error: string) => void) => {
   const [isLoading, setIsLoading] = useState(false);
   const [countdown, setCountdown] = useState(0);
@@ -75,8 +72,6 @@ export const useFirebaseSMS = (phone: string, onVerificationSuccess: (idToken: s
 
       // Mock SMS для тестирования (временно, пока не настроен биллинг Firebase)
       if (USE_MOCK_SMS) {
-        console.log('🔧 Mock SMS отправлен на номер:', phone);
-        console.log('🔧 Тестовый код: 123456');
         
         // Создаем mock confirmation result
         const mockConfirmationResult = {
@@ -96,7 +91,6 @@ export const useFirebaseSMS = (phone: string, onVerificationSuccess: (idToken: s
         
         setConfirmationResult(mockConfirmationResult);
         setCountdown(60);
-        console.log('✅ Mock SMS успешно отправлен');
         return;
       }
 
@@ -109,7 +103,6 @@ export const useFirebaseSMS = (phone: string, onVerificationSuccess: (idToken: s
       
       setCountdown(60); // 60 секунд до возможности повторной отправки
       
-      console.log('SMS sent successfully', { phone });
       
     } catch (error: any) {
       console.error('SMS sending error:', error);
@@ -143,7 +136,7 @@ export const useFirebaseSMS = (phone: string, onVerificationSuccess: (idToken: s
       // Получаем idToken
       const idToken = await cred.user.getIdToken();
       
-      console.log('Code verified successfully', { 
+      console.log({
         uid: cred.user.uid,
         idToken: idToken.slice(0, 20) + '...'
       });

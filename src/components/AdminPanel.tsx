@@ -134,9 +134,7 @@ const AdminPanel: React.FC = () => {
   const [activityLogsRowsPerPage, setActivityLogsRowsPerPage] = useState(10);
   const [activityLogsTotal, setActivityLogsTotal] = useState(0);
 
-  // Check if user is admin
   useEffect(() => {
-    console.log('🔍 DEBUG - AdminPanel user check:', user);
     if (user && !user.is_admin) {
       setError('Доступ запрещен. Требуются права администратора.');
     }
@@ -188,28 +186,18 @@ const AdminPanel: React.FC = () => {
         limit: usersRowsPerPage,
       });
       
-      // Временная отладка
-      console.log('🔍 DEBUG - API Response:', response);
-      console.log('🔍 DEBUG - Response status:', response.status);
-      console.log('🔍 DEBUG - Response data:', response.data);
-      
       if (response.status && response.data) {
-        const usersData = response.data.items || []; // API возвращает данные в поле 'items'
+        const usersData = response.data.items || [];
         const totalData = response.data.total || 0;
-        
-        console.log('🔍 DEBUG - Setting users:', usersData);
-        console.log('🔍 DEBUG - Setting total:', totalData);
         
         setUsers(usersData);
         setUsersTotal(totalData);
       } else {
-        console.log('🔍 DEBUG - API call failed:', response);
         setUsers([]);
         setUsersTotal(0);
         setError(`Не удалось загрузить список пользователей: ${response.message || response.error || 'Неизвестная ошибка'}`);
       }
     } catch (err: any) {
-      console.log('🔍 DEBUG - Exception caught:', err);
       setUsers([]);
       setUsersTotal(0);
       setError(err.message || 'Ошибка загрузки пользователей');
@@ -578,10 +566,7 @@ const AdminPanel: React.FC = () => {
                     </TableRow>
                   </TableHead>
                   <TableBody>
-                    {(() => {
-                      console.log('🔍 DEBUG - Rendering users table, users count:', users?.length || 0);
-                      console.log('🔍 DEBUG - Users data:', users);
-                      return (users || []).map((user) => (
+                    {(users || []).map((user) => (
                       <TableRow key={user.id}>
                         <TableCell>{user.id.slice(0, 8)}...</TableCell>
                         <TableCell>{user.phone}</TableCell>
@@ -634,8 +619,7 @@ const AdminPanel: React.FC = () => {
                           </Tooltip>
                         </TableCell>
                       </TableRow>
-                    ));
-                    })()}
+                    ))}
                   </TableBody>
                 </Table>
               </TableContainer>

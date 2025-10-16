@@ -2,7 +2,6 @@ import { initializeApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
 import { config } from './environment';
 
-// Валидация конфигурации Firebase
 if (!config.firebase.apiKey || !config.firebase.projectId) {
   throw new Error('Firebase configuration is missing required environment variables');
 }

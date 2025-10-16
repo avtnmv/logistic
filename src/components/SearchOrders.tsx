@@ -102,8 +102,6 @@ const SearchOrders: React.FC = () => {
   ];
 
   const processOrders = useCallback(() => {
-    console.log('🔄 Обрабатываем заявки...');
-    console.log('🔍 Текущий пользователь:', currentUser);
     
     // Объединяем все заявки
     const allApiOrders: any[] = [];
@@ -190,39 +188,16 @@ const SearchOrders: React.FC = () => {
         order.user_id !== currentUser?.id
       );
       
-      console.log('✅ Загружено заявок:', filteredOrders.length);
-      console.log('📦 Грузы:', cargos?.length || 0);
-      console.log('🚚 Транспорт:', transports?.length || 0);
-      console.log('👤 Текущий пользователь ID:', currentUser?.id);
-      console.log('🔍 Все заявки до фильтрации:', allApiOrders.length);
-      console.log('🔍 Заявки после фильтрации:', filteredOrders.length);
-      console.log('🔍 Данные cargos:', cargos);
-      console.log('🔍 Данные transports:', transports);
-      
-      // Отладка фильтрации
-      if (allApiOrders.length > 0) {
-        console.log('🔍 Первая заявка user_id:', allApiOrders[0].user_id);
-        console.log('🔍 Текущий пользователь ID:', currentUser?.id);
-        console.log('🔍 Совпадают ли ID?', allApiOrders[0].user_id === currentUser?.id);
-      }
-      
     setAllOrders(filteredOrders);
   }, [cargos, transports, currentUser?.id]);
 
   const loadAllOrders = async () => {
     setLoading(true);
     try {
-      console.log('🔄 Загружаем заявки через API...');
-      console.log('🔍 Текущий пользователь:', currentUser);
-      
-      // Загружаем грузы и транспорт параллельно
-      const [cargosResult, transportsResult] = await Promise.all([
+      await Promise.all([
         loadCargos(),
         loadTransports()
       ]);
-      
-      console.log('📡 Результат загрузки грузов:', cargosResult);
-      console.log('📡 Результат загрузки транспорта:', transportsResult);
       
     } catch (error) {
       console.error('❌ Ошибка загрузки заявок:', error);
@@ -237,9 +212,7 @@ const SearchOrders: React.FC = () => {
   }, [currentUser?.id]);
 
   useEffect(() => {
-    // Обновляем отображение заявок когда загружаются новые данные
     if (cargos !== undefined && transports !== undefined) {
-      console.log('🔄 Обновляем отображение заявок...');
       processOrders();
     }
   }, [cargos, transports]);
@@ -860,9 +833,7 @@ const SearchOrders: React.FC = () => {
                                     <path d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                                   </svg>
                                   {(() => {
-                                    const cargoType = getDetailedCargoType(order.note || '', order.cargo_type || order.cargoType || 'GENERAL');
-                                    console.log('🔍 SearchOrders cargo_type для заявки', order.id, ':', cargoType);
-                                    return cargoType;
+                                    return getDetailedCargoType(order.note || '', order.cargo_type || order.cargoType || 'GENERAL');
                                   })()}
                                 </div>
                               </div>
@@ -1600,9 +1571,7 @@ const SearchOrders: React.FC = () => {
                                         <path d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                                       </svg>
                                       {(() => {
-                                        const cargoType = getDetailedCargoType(order.note || '', order.cargo_type || order.cargoType || 'GENERAL');
-                                        console.log('🔍 SearchOrders cargo_type для заявки', order.id, ':', cargoType);
-                                        return cargoType;
+                                        return getDetailedCargoType(order.note || '', order.cargo_type || order.cargoType || 'GENERAL');
                                       })()}
                                     </div>
                                   </div>

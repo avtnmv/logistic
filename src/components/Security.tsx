@@ -85,7 +85,6 @@ const Security: React.FC = () => {
 
     const code = Math.floor(1000 + Math.random() * 9000).toString();
     setGeneratedCode(code);
-    console.log(code);
     setMessage(`Код подтверждения отправлен на ${email}`);
     setMessageType('success');
     setMessageVisible(true);

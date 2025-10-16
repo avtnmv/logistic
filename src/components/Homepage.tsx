@@ -292,12 +292,9 @@ const Homepage: React.FC = () => {
         }
         
         if (deleted) {
-          console.log('✅ Заявка удалена успешно');
-          // Перезагружаем данные
           await loadMyCargos();
           await loadMyTransports();
         } else {
-          console.log('❌ Ошибка удаления заявки');
           alert('Ошибка удаления заявки');
         }
         
@@ -430,9 +427,6 @@ const Homepage: React.FC = () => {
 
   useEffect(() => {
     if (location.pathname === '/my-transports') {
-      // Загружаем данные для страницы "Мои перевозки"
-      console.log('🔄 Загружаем данные для "Мои перевозки"...');
-      console.log('👤 Текущий пользователь:', currentUser);
       loadMyCargos();
       loadMyTransports();
       return;
@@ -963,10 +957,6 @@ const Homepage: React.FC = () => {
         const selectedCargoType = selectedValues.cargoType[0] || 'equipment';
         const apiCargoType = mapCargoTypeToAPI(selectedCargoType);
         
-        console.log('🔍 Выбранный тип груза в форме:', selectedCargoType);
-        console.log('🔍 Маппинг в API тип:', apiCargoType);
-        console.log('🔍 selectedValues.cargoType:', selectedValues.cargoType);
-        
         const cargoData = {
           date_from: formData.loadingStartDate || new Date().toISOString().split('T')[0],
           date_to: formData.loadingEndDate || new Date().toISOString().split('T')[0],
@@ -1009,12 +999,9 @@ const Homepage: React.FC = () => {
           ]
         };
 
-        console.log('🚛 Создаем груз через API:', cargoData);
         const response = await createCargo(cargoData);
-        console.log('📡 Ответ API:', response);
         
         if (response.status && response.data) {
-          console.log('✅ Груз создан успешно:', response.data);
           alert('Груз успешно создан!');
           // Перезагружаем список грузов
           await loadMyCargos();
@@ -1062,12 +1049,9 @@ const Homepage: React.FC = () => {
           ]
         };
 
-        console.log('🚚 Создаем транспорт через API:', transportData);
         const response = await createTransport(transportData);
-        console.log('📡 Ответ API:', response);
         
         if (response.status && response.data) {
-          console.log('✅ Транспорт создан успешно:', response.data);
           alert('Транспорт успешно создан!');
           // Перезагружаем список транспорта
           await loadMyTransports();
@@ -2639,13 +2623,9 @@ const Homepage: React.FC = () => {
               // Используем данные из хука, который уже вызван на верхнем уровне
               const allMyOrders = [...(myCargos || []), ...(myTransports || [])];
               
-              console.log('📋 Мои заявки:', allMyOrders.length);
-              console.log('📦 Мои грузы:', myCargos?.length || 0);
-              console.log('🚚 Мой транспорт:', myTransports?.length || 0);
               
               // Функция для преобразования API данных в формат карточки
               const convertOrderToCard = (order: any) => {
-                console.log('🔍 Конвертируем заявку:', order.id, 'cargo_type:', order.cargo_type);
                 
                 // API не возвращает type в points, используем порядок: первый = загрузка/отправление, второй = разгрузка/прибытие
                 const pickupPoint = order.points?.[0]; // Первая точка

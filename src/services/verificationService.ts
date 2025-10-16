@@ -53,7 +53,6 @@ export class VerificationService {
     userName?: string
   ): Promise<VerificationResult> {
     
-    console.log(code);
     
     await new Promise(resolve => setTimeout(resolve, 1000));
     

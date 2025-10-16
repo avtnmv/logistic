@@ -1,4 +1,3 @@
-// Конфигурация приложения с переменными окружения
 export const config = {
   // API Configuration
   apiBaseUrl: process.env.REACT_APP_API_BASE_URL || 'https://api.demo-logistica.com',
@@ -28,7 +27,6 @@ export const config = {
   },
 };
 
-// Проверка обязательных переменных окружения
 export const validateEnvironment = () => {
   const requiredVars = [
     'REACT_APP_API_BASE_URL',

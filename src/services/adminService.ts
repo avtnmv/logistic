@@ -1,7 +1,6 @@
 import apiClient, { ApiResponse, ApiError } from './apiClient';
 import { User } from './authService';
 
-// Интерфейсы для админских операций
 export interface AdminUser extends User {
   // Дополнительные поля для админа
 }
@@ -44,7 +43,6 @@ export interface RevokeSessionResponse {
   message: string;
 }
 
-// IP Blacklist
 export interface IPBlacklistItem {
   id: string;
   ip_address: string;
@@ -71,7 +69,6 @@ export interface UpdateIPBlacklistRequest {
   reason?: string;
 }
 
-// Geo Location
 export interface GeoLocation {
   id: string;
   parent_id: string | null;
@@ -113,7 +110,6 @@ export interface UpdateGeoLocationRequest {
   is_active?: boolean;
 }
 
-// Activity Logs
 export interface ActivityLog {
   id: string;
   user_id: string;

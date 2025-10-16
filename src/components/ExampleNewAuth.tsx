@@ -9,7 +9,6 @@ const ExampleNewAuth: React.FC = () => {
   const handleLogin = async () => {
     try {
       await login('+31645263963', 'password123');
-      console.log('✅ Вход выполнен успешно');
     } catch (error) {
       console.error('❌ Ошибка входа:', error);
     }
@@ -18,7 +17,6 @@ const ExampleNewAuth: React.FC = () => {
   const handleLogout = async () => {
     try {
       await logout();
-      console.log('✅ Выход выполнен успешно');
     } catch (error) {
       console.error('❌ Ошибка выхода:', error);
     }

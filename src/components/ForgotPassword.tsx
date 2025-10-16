@@ -72,7 +72,6 @@ const ForgotPassword: React.FC = () => {
       testDB.codes[currentPhone] = code;
     }
     
-    console.log(code);
     
     showFormMessage('Код отправлен на ваш номер телефона', 'success');
     setCurrentStep('code');
@@ -166,7 +165,6 @@ const ForgotPassword: React.FC = () => {
       testDB.codes[currentPhone] = code;
     }
     
-    console.log(code);
     
     showFormMessage('Код был повторно отправлен на ваш номер телефона', 'success');
     setCountdown(30);

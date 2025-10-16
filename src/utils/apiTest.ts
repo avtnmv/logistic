@@ -1,11 +1,8 @@
-// Утилита для тестирования API
 import { config } from '../config/environment';
 
 export const testApiConnection = async () => {
   const API_BASE_URL = config.apiBaseUrl;
   
-  console.log('=== API CONNECTION TEST ===');
-  console.log('API Base URL:', API_BASE_URL);
   
   try {
     // Тест простого GET запроса
@@ -16,12 +13,9 @@ export const testApiConnection = async () => {
       },
     });
     
-    console.log('Health check response status:', response.status);
-    console.log('Health check response headers:', response.headers);
     
     if (response.ok) {
       const data = await response.json();
-      console.log('Health check response data:', data);
       return { success: true, data };
     } else {
       console.error('Health check failed:', response.status, response.statusText);
@@ -35,23 +29,16 @@ export const testApiConnection = async () => {
 };
 
 export const testAuthToken = () => {
-  console.log('=== AUTH TOKEN TEST ===');
   
   const accessToken = localStorage.getItem('accessToken');
   const refreshToken = localStorage.getItem('refreshToken');
   
-  console.log('Access token exists:', !!accessToken);
-  console.log('Refresh token exists:', !!refreshToken);
   
   if (accessToken) {
-    console.log('Access token (first 50 chars):', accessToken.slice(0, 50) + '...');
     
     try {
       // Декодируем JWT токен (только payload часть)
       const payload = JSON.parse(atob(accessToken.split('.')[1]));
-      console.log('Token payload:', payload);
-      console.log('Token expires at:', new Date(payload.exp * 1000));
-      console.log('Token is expired:', new Date(payload.exp * 1000) < new Date());
     } catch (error) {
       console.error('Error decoding token:', error);
     }
@@ -65,7 +52,6 @@ export const testAuthToken = () => {
 };
 
 export const testAdminEndpoint = async () => {
-  console.log('=== ADMIN ENDPOINT TEST ===');
   
   const accessToken = localStorage.getItem('accessToken');
   const API_BASE_URL = config.apiBaseUrl;
@@ -84,11 +70,9 @@ export const testAdminEndpoint = async () => {
       },
     });
     
-    console.log('Admin endpoint response status:', response.status);
     
     if (response.ok) {
       const data = await response.json();
-      console.log('Admin endpoint response data:', data);
       return { success: true, data };
     } else {
       const errorData = await response.json();

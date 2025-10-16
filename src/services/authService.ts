@@ -1,6 +1,5 @@
 import apiClient, { ApiResponse, ApiError } from './apiClient';
 
-// Интерфейсы для аутентификации
 export interface User {
   id: string;
   is_admin: boolean;
@@ -119,7 +118,6 @@ export interface ResetPasswordResponse {
 }
 
 class AuthService {
-  // Проверка существования телефона
   async checkPhone(data: CheckPhoneRequest): Promise<ApiResponse<CheckPhoneResponse>> {
     try {
       const response = await apiClient.post<CheckPhoneResponse>('/auth/check-phone', data);
@@ -129,12 +127,10 @@ class AuthService {
     }
   }
 
-  // Верификация телефона через Firebase
   async verifyFirebase(data: VerifyFirebaseRequest): Promise<ApiResponse<VerifyFirebaseResponse>> {
     try {
       const response = await apiClient.post<VerifyFirebaseResponse>('/auth/phone/verify-firebase', data);
       
-      // Сохраняем токены после успешной верификации
       if (response.status && response.data) {
         apiClient.setTokens(response.data.accessToken, response.data.refreshToken);
       }
@@ -145,7 +141,6 @@ class AuthService {
     }
   }
 
-  // Регистрация пользователя
   async register(data: RegisterRequest, accessToken: string, refreshToken: string): Promise<ApiResponse<RegisterResponse>> {
     try {
       const response = await apiClient.post<RegisterResponse>('/auth/register', data, {
@@ -160,12 +155,10 @@ class AuthService {
     }
   }
 
-  // Вход в систему
   async login(data: LoginRequest): Promise<ApiResponse<LoginResponse>> {
     try {
       const response = await apiClient.post<LoginResponse>('/auth/login', data);
       
-      // Сохраняем токены после успешного входа
       if (response.status && response.data) {
         apiClient.setTokens(response.data.accessToken, response.data.refreshToken);
       }
@@ -176,7 +169,6 @@ class AuthService {
     }
   }
 
-  // Получение информации о текущем пользователе
   async getMe(): Promise<ApiResponse<User>> {
     try {
       const response = await apiClient.get<User>('/auth/me');
@@ -186,7 +178,6 @@ class AuthService {
     }
   }
 
-  // Восстановление пароля - отправка SMS
   async forgotPassword(data: ForgotPasswordRequest): Promise<ApiResponse<ForgotPasswordResponse>> {
     try {
       const response = await apiClient.post<ForgotPasswordResponse>('/auth/phone/verify-restore-password', data);
@@ -196,7 +187,6 @@ class AuthService {
     }
   }
 
-  // Сброс пароля
   async resetPassword(data: ResetPasswordRequest): Promise<ApiResponse<ResetPasswordResponse>> {
     try {
       const response = await apiClient.post<ResetPasswordResponse>('/auth/reset-password', data);
@@ -206,26 +196,20 @@ class AuthService {
     }
   }
 
-  // Выход из системы
   async logout(): Promise<void> {
     try {
       await apiClient.post('/auth/logout');
     } catch (error) {
       console.warn('Logout request failed:', error);
     } finally {
-      // Очищаем токены в любом случае
       apiClient.clearTokens();
     }
   }
 
-  // Проверка авторизации
   isAuthenticated(): boolean {
-    const hasToken = !!apiClient['accessToken'];
-    console.log('🔍 authService.isAuthenticated():', hasToken);
-    return hasToken;
+    return !!apiClient['accessToken'];
   }
 
-  // Получение текущего пользователя из localStorage
   getCurrentUser(): User | null {
     if (typeof window !== 'undefined') {
       const userData = localStorage.getItem('currentUser');
@@ -240,14 +224,12 @@ class AuthService {
     return null;
   }
 
-  // Сохранение пользователя в localStorage
   saveCurrentUser(user: User): void {
     if (typeof window !== 'undefined') {
       localStorage.setItem('currentUser', JSON.stringify(user));
     }
   }
 
-  // Очистка данных пользователя
   clearCurrentUser(): void {
     if (typeof window !== 'undefined') {
       localStorage.removeItem('currentUser');

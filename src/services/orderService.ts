@@ -1,6 +1,5 @@
 import apiClient, { ApiResponse, ApiError } from './apiClient';
 
-// Интерфейсы для геолокации
 export interface GeoLocation {
   id: string;
   parent_id: string | null;
@@ -34,7 +33,6 @@ export interface TransportPoint {
   address?: string;
 }
 
-// Интерфейсы для груза
 export interface Cargo {
   id: string;
   user_id: string;
@@ -148,7 +146,6 @@ export interface CargoInitData {
   loadType: Record<string, string>;
 }
 
-// Интерфейсы для транспорта
 export interface Transport {
   id: string;
   user_id: string;

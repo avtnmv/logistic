@@ -83,16 +83,11 @@ export const OrderProvider: React.FC<OrderProviderProps> = ({ children }) => {
     setCargoLoading(true);
     setCargoError(null);
     try {
-      console.log('🔄 Загружаем грузы через API...');
       const response = await cargoService.getCargoList(params);
-      console.log('📡 Ответ API для грузов:', response);
       if (response.status && response.data) {
-        // API возвращает массив прямо в response.data, а не в response.data.data
         const cargosArray = Array.isArray(response.data) ? response.data : response.data.data;
-        console.log('✅ Грузы загружены:', cargosArray?.length || 0);
         setCargos(cargosArray);
       } else {
-        console.log('❌ Ошибка загрузки грузов:', response.message);
         setCargoError(response.message || 'Ошибка загрузки грузов');
       }
     } catch (err: any) {
@@ -107,16 +102,12 @@ export const OrderProvider: React.FC<OrderProviderProps> = ({ children }) => {
     setCargoLoading(true);
     setCargoError(null);
     try {
-      console.log('🔄 Загружаем МОИ грузы через API...');
       const response = await cargoService.getMyCargoList(params);
-      console.log('📡 Ответ API для МОИХ грузов:', response);
       if (response.status && response.data) {
         // API возвращает массив прямо в response.data, а не в response.data.data
         const cargosArray = Array.isArray(response.data) ? response.data : response.data.data;
-        console.log('✅ МОИ грузы загружены:', cargosArray?.length || 0);
         setMyCargos(cargosArray);
       } else {
-        console.log('❌ Ошибка загрузки МОИХ грузов:', response.message);
         setCargoError(response.message || 'Ошибка загрузки ваших грузов');
       }
     } catch (err: any) {
@@ -187,7 +178,6 @@ export const OrderProvider: React.FC<OrderProviderProps> = ({ children }) => {
     try {
       const response = await cargoService.deleteCargo(id);
       if (response.status) {
-        // Удаляем груз из списков
         setCargos(prev => (prev || []).filter(cargo => cargo.id !== id));
         setMyCargos(prev => (prev || []).filter(cargo => cargo.id !== id));
         return true;
@@ -245,21 +235,15 @@ export const OrderProvider: React.FC<OrderProviderProps> = ({ children }) => {
     }
   };
 
-  // Методы для транспорта (аналогично грузам)
   const loadTransports = async (params: any = {}) => {
     setTransportLoading(true);
     setTransportError(null);
     try {
-      console.log('🔄 Загружаем транспорт через API...');
       const response = await transportService.getTransportList(params);
-      console.log('📡 Ответ API для транспорта:', response);
       if (response.status && response.data) {
-        // API возвращает массив прямо в response.data, а не в response.data.data
         const transportsArray = Array.isArray(response.data) ? response.data : response.data.data;
-        console.log('✅ Транспорт загружен:', transportsArray?.length || 0);
         setTransports(transportsArray);
       } else {
-        console.log('❌ Ошибка загрузки транспорта:', response.message);
         setTransportError(response.message || 'Ошибка загрузки транспорта');
       }
     } catch (err: any) {
@@ -274,16 +258,11 @@ export const OrderProvider: React.FC<OrderProviderProps> = ({ children }) => {
     setTransportLoading(true);
     setTransportError(null);
     try {
-      console.log('🔄 Загружаем МОЙ транспорт через API...');
       const response = await transportService.getMyTransportList(params);
-      console.log('📡 Ответ API для МОЕГО транспорта:', response);
       if (response.status && response.data) {
-        // API возвращает массив прямо в response.data, а не в response.data.data
         const transportsArray = Array.isArray(response.data) ? response.data : response.data.data;
-        console.log('✅ МОЙ транспорт загружен:', transportsArray?.length || 0);
         setMyTransports(transportsArray);
       } else {
-        console.log('❌ Ошибка загрузки МОЕГО транспорта:', response.message);
         setTransportError(response.message || 'Ошибка загрузки вашего транспорта');
       }
     } catch (err: any) {
@@ -300,7 +279,6 @@ export const OrderProvider: React.FC<OrderProviderProps> = ({ children }) => {
     try {
       const response = await transportService.createTransport(data);
       if (response.status && response.data) {
-        // Добавляем новый транспорт в список
         setTransports(prev => [response.data!, ...(prev || [])]);
         setMyTransports(prev => [response.data!, ...(prev || [])]);
       } else {
@@ -327,7 +305,6 @@ export const OrderProvider: React.FC<OrderProviderProps> = ({ children }) => {
     try {
       const response = await transportService.updateTransport({ id, ...data });
       if (response.status && response.data) {
-        // Обновляем транспорт в списках
         setTransports(prev => (prev || []).map(transport => transport.id === id ? response.data! : transport));
         setMyTransports(prev => (prev || []).map(transport => transport.id === id ? response.data! : transport));
       } else {
@@ -354,7 +331,6 @@ export const OrderProvider: React.FC<OrderProviderProps> = ({ children }) => {
     try {
       const response = await transportService.deleteTransport(id);
       if (response.status) {
-        // Удаляем транспорт из списков
         setTransports(prev => (prev || []).filter(transport => transport.id !== id));
         setMyTransports(prev => (prev || []).filter(transport => transport.id !== id));
         return true;
@@ -377,7 +353,6 @@ export const OrderProvider: React.FC<OrderProviderProps> = ({ children }) => {
     try {
       const response = await transportService.upTransport(id);
       if (response.status) {
-        // Перезагружаем список транспорта
         await loadTransports();
         await loadMyTransports();
         return true;
@@ -412,7 +387,6 @@ export const OrderProvider: React.FC<OrderProviderProps> = ({ children }) => {
     }
   };
 
-  // Утилиты
   const clearError = () => {
     setError(null);
   };
@@ -426,25 +400,21 @@ export const OrderProvider: React.FC<OrderProviderProps> = ({ children }) => {
   };
 
   const value: OrderContextType = {
-    // Состояние грузов
     cargos,
     myCargos,
     cargoInitData,
     cargoLoading,
     cargoError,
     
-    // Состояние транспорта
     transports,
     myTransports,
     transportInitData,
     transportLoading,
     transportError,
     
-    // Общее состояние
     isLoading,
     error,
     
-    // Методы для грузов
     loadCargos,
     loadMyCargos,
     createCargo,
@@ -453,7 +423,6 @@ export const OrderProvider: React.FC<OrderProviderProps> = ({ children }) => {
     upCargo,
     loadCargoInitData,
     
-    // Методы для транспорта
     loadTransports,
     loadMyTransports,
     createTransport,
@@ -462,7 +431,6 @@ export const OrderProvider: React.FC<OrderProviderProps> = ({ children }) => {
     upTransport,
     loadTransportInitData,
     
-    // Утилиты
     clearError,
     clearCargoError,
     clearTransportError,

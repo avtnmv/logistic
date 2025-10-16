@@ -18,7 +18,6 @@ export interface ApiError {
   statusCode: number;
 }
 
-// Создаем axios instance
 const api = axios.create({
   baseURL: API_BASE_URL,
   withCredentials: false,
@@ -27,7 +26,6 @@ const api = axios.create({
   },
 });
 
-// Request interceptor
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('accessToken');
   const refreshToken = localStorage.getItem('refreshToken');
@@ -52,7 +50,6 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-// Response interceptor
 api.interceptors.response.use(
   (response) => {
     const accessToken = response.headers['x-access-token'];

@@ -40,20 +40,16 @@ const Registration: React.FC = () => {
   // Проверка валидности токенов
   const checkTokenValidity = useCallback(async (savedAccessToken: string, savedRefreshToken: string) => {
     try {
-      console.log('Проверяем валидность сохраненных токенов...');
       // Устанавливаем токены в apiClient для проверки
       apiClient.setTokens(savedAccessToken, savedRefreshToken);
       
       // Проверяем токены через API
       const response = await authService.getMe();
-      console.log('Ответ getMe:', response);
       
       if (response.status && response.data) {
-        console.log('Стадия регистрации:', response.data.registration_stage);
         // Проверяем, что регистрация не завершена
         if (response.data.registration_stage === 'PHONE_VERIFIED') {
           // Токены валидны, переходим к завершению регистрации
-          console.log('Переходим к завершению регистрации');
           setAccessToken(savedAccessToken);
           setRefreshToken(savedRefreshToken);
           setPhone(response.data.phone);
@@ -61,7 +57,6 @@ const Registration: React.FC = () => {
           showFormMessage('Продолжите завершение регистрации', 'info');
         } else if (response.data.registration_stage === 'COMPLETED') {
           // Регистрация уже завершена, очищаем токены
-          console.log('Регистрация уже завершена');
           localStorage.removeItem('registration_accessToken');
           localStorage.removeItem('registration_refreshToken');
           showFormMessage('Регистрация уже завершена. Перейдите к входу в систему.', 'info');
@@ -72,27 +67,19 @@ const Registration: React.FC = () => {
       console.error('Ошибка проверки токенов:', error);
       localStorage.removeItem('registration_accessToken');
       localStorage.removeItem('registration_refreshToken');
-      console.log('Токены невалидны, начинаем регистрацию заново');
     }
   }, []);
 
   // Проверяем сохраненные токены при загрузке
   useEffect(() => {
-    console.log('🚀 Компонент Registration загружен');
     const savedAccessToken = localStorage.getItem('registration_accessToken');
     const savedRefreshToken = localStorage.getItem('registration_refreshToken');
     
-    console.log('🔑 Сохраненные токены:', { 
-      hasAccessToken: !!savedAccessToken, 
-      hasRefreshToken: !!savedRefreshToken 
-    });
     
     if (savedAccessToken && savedRefreshToken) {
-      console.log('✅ Найдены токены, проверяем валидность');
       // Проверяем валидность токенов
       checkTokenValidity(savedAccessToken, savedRefreshToken);
     } else {
-      console.log('❌ Токены не найдены, начинаем с первого шага');
     }
   }, [checkTokenValidity]);
 
@@ -110,14 +97,11 @@ const Registration: React.FC = () => {
   const handleFirebaseVerification = async (idToken: string) => {
     setIsLoading(true);
     try {
-      console.log('Отправляем запрос verifyFirebase с токеном:', idToken.substring(0, 20) + '...');
       const response = await authService.verifyFirebase({ idToken });
-      console.log('Ответ verifyFirebase:', response);
       
       if (response.status && response.data) {
         const { accessToken: token, refreshToken: refresh } = response.data;
         
-        console.log('Получены токены, переходим к details');
         
         // Сохраняем токены в state
         setAccessToken(token);
@@ -130,7 +114,6 @@ const Registration: React.FC = () => {
         setCurrentStep('details');
         showFormMessage('Номер телефона подтвержден!', 'success');
       } else {
-        console.log('Ошибка в ответе verifyFirebase:', response);
         showFormMessage(response.message || 'Ошибка подтверждения номера', 'error');
       }
     } catch (error: any) {
@@ -157,24 +140,19 @@ const Registration: React.FC = () => {
 
     setIsLoading(true);
     try {
-      console.log('🔍 Проверяем номер телефона:', phone);
       // Проверяем, существует ли телефон
       const checkResponse = await authService.checkPhone({ phone });
-      console.log('📞 Ответ checkPhone:', checkResponse);
       
       if (checkResponse.status && checkResponse.data) {
-        console.log('📱 existing:', checkResponse.data.existing);
         
         if (checkResponse.data.existing) {
           // Пользователь уже существует, но возможно не завершил регистрацию
           // Нужно получить токены для завершения регистрации
           try {
-            console.log('👤 Пользователь найден, отправляем SMS для получения токенов');
             showFormMessage('Пользователь найден. Отправляем код для завершения регистрации...', 'info');
             
             // Отправляем SMS для получения токенов
             await firebaseSMS.sendSMS();
-            console.log('✅ SMS отправлен, переходим к шагу code');
             setCurrentStep('code');
           } catch (error: any) {
             console.error('❌ Ошибка отправки SMS:', error);
@@ -182,14 +160,11 @@ const Registration: React.FC = () => {
           }
         } else {
           // Новый пользователь, отправляем SMS
-          console.log('🆕 Новый пользователь, отправляем SMS');
           showFormMessage('Отправляем код...', 'info');
           await firebaseSMS.sendSMS();
-          console.log('✅ SMS отправлен новому пользователю, переходим к шагу code');
           setCurrentStep('code');
         }
       } else {
-        console.log('❌ Ошибка в ответе checkPhone:', checkResponse);
         showFormMessage(checkResponse.message || 'Ошибка проверки номера', 'error');
       }
     } catch (error: any) {

@@ -42,12 +42,10 @@ export const AuthProviderNew: React.FC<AuthProviderProps> = ({ children }) => {
     const initializeAuth = async () => {
       try {
         setIsLoading(true);
-        console.log('🔍 AuthContextNew: Инициализируем аутентификацию...');
         
         await authServiceNew.initializeUser();
         
         const currentUser = useUserStore.getState().user;
-        console.log('🔍 AuthContextNew: Текущий пользователь:', currentUser);
         
       } catch (error) {
         console.error('🔍 AuthContextNew: Ошибка инициализации:', error);
@@ -68,9 +66,7 @@ export const AuthProviderNew: React.FC<AuthProviderProps> = ({ children }) => {
       setError(null);
       setIsLoading(true);
       
-      console.log('🔍 AuthContextNew: Выполняем вход...');
       await authServiceNew.login({ phone, password });
-      console.log('🔍 AuthContextNew: Вход выполнен успешно');
       
     } catch (error: any) {
       const errorMessage = error.message || 'Ошибка входа в систему';
@@ -86,9 +82,7 @@ export const AuthProviderNew: React.FC<AuthProviderProps> = ({ children }) => {
       setError(null);
       setIsLoading(true);
       
-      console.log('🔍 AuthContextNew: Выполняем регистрацию...');
       await authServiceNew.register({ firstName, lastName, password }, accessToken, refreshToken);
-      console.log('🔍 AuthContextNew: Регистрация выполнена успешно');
       
     } catch (error: any) {
       const errorMessage = error.message || 'Ошибка регистрации';
@@ -104,9 +98,7 @@ export const AuthProviderNew: React.FC<AuthProviderProps> = ({ children }) => {
       setError(null);
       setIsLoading(true);
       
-      console.log('🔍 AuthContextNew: Выполняем выход...');
       await authServiceNew.logout();
-      console.log('🔍 AuthContextNew: Выход выполнен успешно');
       
     } catch (error: any) {
       console.warn('🔍 AuthContextNew: Ошибка при выходе:', error);
@@ -118,7 +110,6 @@ export const AuthProviderNew: React.FC<AuthProviderProps> = ({ children }) => {
   const checkPhone = async (phone: string): Promise<boolean> => {
     try {
       setError(null);
-      console.log('🔍 AuthContextNew: Проверяем телефон...');
       
       const response = await authServiceNew.checkPhone({ phone });
       
@@ -139,9 +130,7 @@ export const AuthProviderNew: React.FC<AuthProviderProps> = ({ children }) => {
       setError(null);
       setIsLoading(true);
       
-      console.log('🔍 AuthContextNew: Верифицируем Firebase...');
       await authServiceNew.verifyFirebase({ idToken });
-      console.log('🔍 AuthContextNew: Firebase верификация выполнена успешно');
       
     } catch (error: any) {
       const errorMessage = error.message || 'Ошибка верификации телефона';
@@ -155,10 +144,8 @@ export const AuthProviderNew: React.FC<AuthProviderProps> = ({ children }) => {
   const forgotPassword = async (phone: string) => {
     try {
       setError(null);
-      console.log('🔍 AuthContextNew: Запрашиваем восстановление пароля...');
       
       await authServiceNew.forgotPassword({ phone });
-      console.log('🔍 AuthContextNew: Запрос восстановления пароля выполнен');
       
     } catch (error: any) {
       const errorMessage = error.message || 'Ошибка восстановления пароля';
@@ -170,10 +157,8 @@ export const AuthProviderNew: React.FC<AuthProviderProps> = ({ children }) => {
   const resetPassword = async (phone: string, password: string, idToken: string) => {
     try {
       setError(null);
-      console.log('🔍 AuthContextNew: Сбрасываем пароль...');
       
       await authServiceNew.resetPassword({ phone, password, idToken });
-      console.log('🔍 AuthContextNew: Сброс пароля выполнен успешно');
       
     } catch (error: any) {
       const errorMessage = error.message || 'Ошибка сброса пароля';

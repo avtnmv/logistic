@@ -17,7 +17,6 @@ const AvailableCodes: React.FC<AvailableCodesProps> = ({
   React.useEffect(() => {
     if (showInConsole) {
       Object.entries(codes).forEach(([phone, code]) => {
-        console.log(code);
       });
     }
   }, [codes, title, showInConsole]);

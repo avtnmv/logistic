@@ -311,9 +311,7 @@ export const logTestData = (title: string): void => {
   Object.entries(TEST_PHONES).forEach(([phone, code]) => {
     const user = DEFAULT_USERS[phone];
     if (user) {
-      console.log(`${phone} ${user.password} ${user.firstName} ${user.lastName}`);
     } else {
-      console.log(`${phone} ${code}`);
     }
   });
 };
