@@ -41,17 +41,21 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     const checkAuth = async () => {
       try {
         if (authService.isAuthenticated()) {
-          const currentUser = authService.getCurrentUser();
-          if (currentUser) {
-            setUser(currentUser);
+          // Всегда загружаем пользователя с сервера при перезагрузке
+          console.log('Loading user from server...');
+          const response = await authService.getMe();
+          if (response.status && response.data) {
+            console.log('User loaded from server:', response.data);
+            setUser(response.data);
           } else {
-            // Пытаемся получить данные пользователя с сервера
-            const response = await authService.getMe();
-            if (response.status && response.data) {
-              setUser(response.data);
-              authService.saveCurrentUser(response.data);
-            }
+            console.warn('Failed to load user from server:', response);
+            // Если не удалось загрузить пользователя, очищаем токены
+            apiClient.clearTokens();
+            setUser(null);
           }
+        } else {
+          console.log('User not authenticated');
+          setUser(null);
         }
       } catch (error) {
         console.warn('Auth check failed:', error);
@@ -98,7 +102,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         };
         
         setUser(userData);
-        authService.saveCurrentUser(userData);
+        // Не сохраняем пользователя в localStorage, загружаем с сервера при перезагрузке
       }
     } catch (error: any) {
       const errorMessage = error.message || 'Ошибка входа в систему';
@@ -118,7 +122,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       
       if (response.status && response.data) {
         setUser(response.data);
-        authService.saveCurrentUser(response.data);
+        // Не сохраняем пользователя в localStorage
       }
     } catch (error: any) {
       const errorMessage = error.message || 'Ошибка регистрации';
@@ -137,7 +141,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       console.warn('Logout error:', error);
     } finally {
       setUser(null);
-      authService.clearCurrentUser();
+      // Очищаем только токены, пользователя уже не храним в localStorage
     }
   };
 
@@ -168,7 +172,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       if (response.status && response.data) {
         // После верификации Firebase пользователь создается с registration_stage: 'PHONE_VERIFIED'
         setUser(response.data.user);
-        authService.saveCurrentUser(response.data.user);
+        // Не сохраняем пользователя в localStorage
       }
     } catch (error: any) {
       const errorMessage = error.message || 'Ошибка верификации телефона';

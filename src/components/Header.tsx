@@ -62,7 +62,10 @@ const Header: React.FC = () => {
               </div>
               <div className="header__user-details">
                 <div className="header__user-name">
-                  {currentUser ? `${currentUser.firstName} ${currentUser.lastName}` : 'Пользователь'}
+                  {currentUser ? 
+                    `${currentUser.first_name || ''} ${currentUser.last_name || ''}`.trim() || 'Пользователь' 
+                    : 'Пользователь'
+                  }
                 </div>
               </div>
             </div>

@@ -209,6 +209,7 @@ const AdminPanel: React.FC = () => {
       console.log('=== LOAD USERS DEBUG ===');
       console.log('Current user for admin check:', user);
       console.log('User is_admin:', user?.is_admin);
+      console.log('User name:', user?.first_name, user?.last_name);
       console.log('Access token exists:', !!localStorage.getItem('accessToken'));
       console.log('Access token:', localStorage.getItem('accessToken')?.slice(0, 20) + '...');
       console.log('API Base URL:', config.apiBaseUrl);
