@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useCurrentUser } from '../hooks/useCurrentUser';
+import { useAuth } from '../contexts/AuthContext';
 import { useSidebar } from '../contexts/SidebarContext';
 import { useOrders } from '../contexts/OrderContext';
 import Header from './Header';
@@ -9,16 +9,9 @@ import '../css/left-sidebar.css';
 import '../css/homepage.css';
 import '../css/search-orders.css';
 
-interface CurrentUser {
-  id: string;
-  firstName?: string;
-  lastName?: string;
-  phone?: string;
-}
-
 const SearchOrders: React.FC = () => {
   const { isSidebarOpen, closeSidebar } = useSidebar();
-  const currentUser = useCurrentUser();
+  const { user: currentUser } = useAuth();
   const { cargos, transports, loadCargos, loadTransports } = useOrders();
   const navigate = useNavigate();
   

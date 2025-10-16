@@ -40,20 +40,31 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        if (authService.isAuthenticated()) {
+        console.log('🔍 AuthContext: Проверяем авторизацию...');
+        const isAuth = authService.isAuthenticated();
+        console.log('🔍 AuthContext: isAuthenticated =', isAuth);
+        
+        if (isAuth) {
+          console.log('🔍 AuthContext: Пользователь авторизован, загружаем данные...');
           // Всегда загружаем пользователя с сервера при перезагрузке
           const response = await authService.getMe();
+          console.log('🔍 AuthContext: Ответ getMe:', response);
+          
           if (response.status && response.data) {
+            console.log('🔍 AuthContext: Устанавливаем пользователя:', response.data);
             setUser(response.data);
           } else {
+            console.log('🔍 AuthContext: Не удалось загрузить пользователя, очищаем токены');
             // Если не удалось загрузить пользователя, очищаем токены
             apiClient.clearTokens();
             setUser(null);
           }
         } else {
+          console.log('🔍 AuthContext: Пользователь не авторизован');
           setUser(null);
         }
       } catch (error) {
+        console.log('🔍 AuthContext: Ошибка при проверке авторизации:', error);
         // Если токен недействителен, очищаем данные
         apiClient.clearTokens();
         setUser(null);

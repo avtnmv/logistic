@@ -220,7 +220,9 @@ class AuthService {
 
   // Проверка авторизации
   isAuthenticated(): boolean {
-    return !!apiClient['accessToken'];
+    const hasToken = !!apiClient['accessToken'];
+    console.log('🔍 authService.isAuthenticated():', hasToken);
+    return hasToken;
   }
 
   // Получение текущего пользователя из localStorage

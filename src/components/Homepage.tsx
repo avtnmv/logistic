@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import Header from './Header';
 import LeftSidebar from './LeftSidebar';
-import { useCurrentUser } from '../hooks/useCurrentUser';
+import { useAuth } from '../contexts/AuthContext';
 import { useSidebar } from '../contexts/SidebarContext';
 import { useOrders } from '../contexts/OrderContext';
 import '../css/left-sidebar.css';
@@ -65,7 +65,7 @@ const Homepage: React.FC = () => {
   const [showTransportDimensions, setShowTransportDimensions] = useState(false);
   
 
-  const currentUser = useCurrentUser();
+  const { user: currentUser } = useAuth();
   
 
   const [selectedValues, setSelectedValues] = useState({
@@ -2880,7 +2880,7 @@ const Homepage: React.FC = () => {
                                 <div className="transport-card__contact-row">
                                   <span className="transport-card__contact-label">Имя:</span>
                                   <span className="transport-card__contact-value">
-                                    {currentUser?.firstName} {currentUser?.lastName}
+                                    {currentUser?.first_name} {currentUser?.last_name}
                                   </span>
                                 </div>
                                 <div className="transport-card__contact-row">
