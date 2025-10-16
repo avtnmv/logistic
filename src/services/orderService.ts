@@ -249,7 +249,6 @@ export interface TransportInitData {
 }
 
 class CargoService {
-  // Получение списка груза
   async getCargoList(params: CargoListParams = {}): Promise<ApiResponse<CargoListResponse>> {
     try {
       const queryParams = new URLSearchParams();
@@ -268,7 +267,6 @@ class CargoService {
     }
   }
 
-  // Получение списка груза пользователя
   async getMyCargoList(params: CargoListParams = {}): Promise<ApiResponse<CargoListResponse>> {
     try {
       const queryParams = new URLSearchParams();
@@ -287,7 +285,6 @@ class CargoService {
     }
   }
 
-  // Создание груза
   async createCargo(data: CreateCargoRequest): Promise<ApiResponse<Cargo>> {
     try {
       const response = await apiClient.post<Cargo>('/cargo/create', data);
@@ -297,7 +294,6 @@ class CargoService {
     }
   }
 
-  // Обновление груза
   async updateCargo(data: UpdateCargoRequest): Promise<ApiResponse<Cargo>> {
     try {
       const response = await apiClient.put<Cargo>(`/cargo/${data.id}`, data);
@@ -307,7 +303,6 @@ class CargoService {
     }
   }
 
-  // Удаление груза
   async deleteCargo(id: string): Promise<ApiResponse<void>> {
     try {
       const response = await apiClient.delete<void>(`/cargo/${id}`);
@@ -317,7 +312,6 @@ class CargoService {
     }
   }
 
-  // Поднятие груза в списке
   async upCargo(id: string): Promise<ApiResponse<void>> {
     try {
       const response = await apiClient.post<void>(`/cargo/${id}/up`);
@@ -327,7 +321,6 @@ class CargoService {
     }
   }
 
-  // Инициализация создания груза
   async initCargo(): Promise<ApiResponse<CargoInitData>> {
     try {
       const response = await apiClient.get<CargoInitData>('/cargo/init');
@@ -339,7 +332,6 @@ class CargoService {
 }
 
 class TransportService {
-  // Получение списка транспорта
   async getTransportList(params: TransportListParams = {}): Promise<ApiResponse<TransportListResponse>> {
     try {
       const queryParams = new URLSearchParams();
@@ -358,7 +350,6 @@ class TransportService {
     }
   }
 
-  // Получение списка транспорта пользователя
   async getMyTransportList(params: TransportListParams = {}): Promise<ApiResponse<TransportListResponse>> {
     try {
       const queryParams = new URLSearchParams();
@@ -377,7 +368,6 @@ class TransportService {
     }
   }
 
-  // Создание транспорта
   async createTransport(data: CreateTransportRequest): Promise<ApiResponse<Transport>> {
     try {
       const response = await apiClient.post<Transport>('/transport/create', data);
@@ -387,7 +377,6 @@ class TransportService {
     }
   }
 
-  // Обновление транспорта
   async updateTransport(data: UpdateTransportRequest): Promise<ApiResponse<Transport>> {
     try {
       const response = await apiClient.put<Transport>(`/transport/${data.id}`, data);
@@ -397,7 +386,6 @@ class TransportService {
     }
   }
 
-  // Удаление транспорта
   async deleteTransport(id: string): Promise<ApiResponse<void>> {
     try {
       const response = await apiClient.delete<void>(`/transport/${id}`);
@@ -407,7 +395,6 @@ class TransportService {
     }
   }
 
-  // Поднятие транспорта в списке
   async upTransport(id: string): Promise<ApiResponse<void>> {
     try {
       const response = await apiClient.post<void>(`/transport/${id}/up`);
@@ -417,7 +404,6 @@ class TransportService {
     }
   }
 
-  // Инициализация создания транспорта
   async initTransport(): Promise<ApiResponse<TransportInitData>> {
     try {
       const response = await apiClient.get<TransportInitData>('/transport/init');

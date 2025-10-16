@@ -141,9 +141,7 @@ export interface ActivityLogParams {
 }
 
 class AdminService {
-  // === USERS MANAGEMENT ===
-  
-  // Получить список всех пользователей
+
   async getUsersList(params: AdminUserListParams = {}): Promise<ApiResponse<AdminUserListResponse>> {
     try {
       const queryParams = new URLSearchParams();
@@ -159,7 +157,6 @@ class AdminService {
     }
   }
 
-  // Получить конкретного пользователя
   async getUserById(userId: string): Promise<ApiResponse<AdminUser>> {
     try {
       const response = await apiClient.get<AdminUser>(`/users/${userId}`);
@@ -169,7 +166,6 @@ class AdminService {
     }
   }
 
-  // Обновить пользователя
   async updateUser(userId: string, data: UpdateUserRequest): Promise<ApiResponse<AdminUser>> {
     try {
       const response = await apiClient.put<AdminUser>(`/users/${userId}`, data);
@@ -179,7 +175,6 @@ class AdminService {
     }
   }
 
-  // Забанить пользователя
   async banUser(userId: string): Promise<ApiResponse<BanUserResponse>> {
     try {
       const response = await apiClient.post<BanUserResponse>(`/users/${userId}/ban`);
@@ -189,7 +184,6 @@ class AdminService {
     }
   }
 
-  // Удалить пользователя
   async deleteUser(userId: string): Promise<ApiResponse<DeleteUserResponse>> {
     try {
       const response = await apiClient.delete<DeleteUserResponse>(`/users/${userId}`);
@@ -199,7 +193,6 @@ class AdminService {
     }
   }
 
-  // Отозвать сессии пользователя
   async revokeUserSessions(): Promise<ApiResponse<RevokeSessionResponse>> {
     try {
       const response = await apiClient.post<RevokeSessionResponse>('/users/sessions/revoke');
@@ -209,9 +202,6 @@ class AdminService {
     }
   }
 
-  // === CARGO MANAGEMENT ===
-  
-  // Получить список всех грузов (админ)
   async getCargoList(params: { page?: number; limit?: number } = {}): Promise<ApiResponse<any>> {
     try {
       const queryParams = new URLSearchParams();
@@ -225,7 +215,6 @@ class AdminService {
     }
   }
 
-  // Удалить груз (админ)
   async deleteCargo(cargoId: string): Promise<ApiResponse<any>> {
     try {
       const response = await apiClient.delete<any>(`/cargo/${cargoId}/admin`);
@@ -235,9 +224,6 @@ class AdminService {
     }
   }
 
-  // === TRANSPORT MANAGEMENT ===
-  
-  // Получить список всех транспортов (админ)
   async getTransportList(params: { page?: number; limit?: number } = {}): Promise<ApiResponse<any>> {
     try {
       const queryParams = new URLSearchParams();
@@ -251,7 +237,6 @@ class AdminService {
     }
   }
 
-  // Удалить транспорт (админ)
   async deleteTransport(transportId: string): Promise<ApiResponse<any>> {
     try {
       const response = await apiClient.delete<any>(`/transport/${transportId}/admin`);
@@ -261,9 +246,6 @@ class AdminService {
     }
   }
 
-  // === IP BLACKLIST MANAGEMENT ===
-  
-  // Получить список заблокированных IP
   async getIPBlacklist(params: { page?: number; limit?: number } = {}): Promise<ApiResponse<IPBlacklistListResponse>> {
     try {
       const queryParams = new URLSearchParams();
@@ -277,7 +259,6 @@ class AdminService {
     }
   }
 
-  // Создать запись в IP blacklist
   async createIPBlacklist(data: CreateIPBlacklistRequest): Promise<ApiResponse<IPBlacklistItem>> {
     try {
       const response = await apiClient.post<IPBlacklistItem>('/ip-blacklist', data);
@@ -287,7 +268,6 @@ class AdminService {
     }
   }
 
-  // Обновить запись в IP blacklist
   async updateIPBlacklist(itemId: string, data: UpdateIPBlacklistRequest): Promise<ApiResponse<IPBlacklistItem>> {
     try {
       const response = await apiClient.put<IPBlacklistItem>(`/ip-blacklist/${itemId}`, data);
@@ -297,7 +277,6 @@ class AdminService {
     }
   }
 
-  // Удалить запись из IP blacklist
   async deleteIPBlacklist(itemId: string): Promise<ApiResponse<any>> {
     try {
       const response = await apiClient.delete<any>(`/ip-blacklist/${itemId}`);
@@ -307,9 +286,6 @@ class AdminService {
     }
   }
 
-  // === GEO LOCATION MANAGEMENT ===
-  
-  // Получить список геолокаций
   async getGeoLocations(params: { page?: number; limit?: number } = {}): Promise<ApiResponse<GeoLocationListResponse>> {
     try {
       const queryParams = new URLSearchParams();
@@ -323,7 +299,6 @@ class AdminService {
     }
   }
 
-  // Создать геолокацию
   async createGeoLocation(data: CreateGeoLocationRequest): Promise<ApiResponse<GeoLocation>> {
     try {
       const response = await apiClient.post<GeoLocation>('/geo-location', data);
@@ -333,7 +308,6 @@ class AdminService {
     }
   }
 
-  // Обновить геолокацию
   async updateGeoLocation(locationId: string, data: UpdateGeoLocationRequest): Promise<ApiResponse<GeoLocation>> {
     try {
       const response = await apiClient.put<GeoLocation>(`/geo-location/${locationId}`, data);
@@ -343,7 +317,6 @@ class AdminService {
     }
   }
 
-  // Удалить геолокацию
   async deleteGeoLocation(locationId: string): Promise<ApiResponse<any>> {
     try {
       const response = await apiClient.delete<any>(`/geo-location/${locationId}`);
@@ -353,9 +326,6 @@ class AdminService {
     }
   }
 
-  // === ACTIVITY LOGS ===
-  
-  // Получить логи активности
   async getActivityLogs(params: ActivityLogParams = {}): Promise<ApiResponse<ActivityLogListResponse>> {
     try {
       const queryParams = new URLSearchParams();

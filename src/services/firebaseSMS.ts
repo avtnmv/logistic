@@ -17,7 +17,6 @@ export const useFirebaseSMS = (phone: string, onVerificationSuccess: (idToken: s
   const [confirmationResult, setConfirmationResult] = useState<any>(null);
   const [recaptchaVerifier, setRecaptchaVerifier] = useState<RecaptchaVerifier | null>(null);
 
-  // Обратный отсчет для повторной отправки SMS
   useEffect(() => {
     let interval: NodeJS.Timeout;
     if (countdown > 0) {
@@ -28,26 +27,21 @@ export const useFirebaseSMS = (phone: string, onVerificationSuccess: (idToken: s
     return () => clearInterval(interval);
   }, [countdown]);
 
-  // Инициализация reCAPTCHA
   const ensureRecaptcha = async (): Promise<RecaptchaVerifier> => {
     try {
-      // Очищаем предыдущий reCAPTCHA
       if (recaptchaVerifier) {
         recaptchaVerifier.clear();
       }
       
-      // Проверяем, что элемент существует
       const recaptchaContainer = document.getElementById('recaptcha-container');
       if (!recaptchaContainer) {
         throw new Error('reCAPTCHA контейнер не найден');
       }
       
-      // Создаем новый reCAPTCHA
       const verifier = new RecaptchaVerifier(auth, 'recaptcha-container', { 
         size: 'invisible' 
       });
       
-      // Рендерим reCAPTCHA
       await verifier.render();
       setRecaptchaVerifier(verifier);
       
@@ -58,26 +52,21 @@ export const useFirebaseSMS = (phone: string, onVerificationSuccess: (idToken: s
     }
   };
 
-  // Отправка SMS через Firebase
   const sendSMS = async () => {
     if (!phone) return;
 
     try {
       setIsLoading(true);
       
-      // Проверяем формат телефона
       if (!phone.startsWith('+')) {
         throw new Error('Номер телефона должен быть в международном формате (начинаться с +)');
       }
 
-      // Mock SMS для тестирования (временно, пока не настроен биллинг Firebase)
       if (USE_MOCK_SMS) {
         
-        // Создаем mock confirmation result
         const mockConfirmationResult = {
           confirm: async (code: string) => {
             if (code === '123456') {
-              // Возвращаем mock пользователя с idToken
               return {
                 user: {
                   getIdToken: async () => 'mock_id_token_' + Date.now()
@@ -94,20 +83,17 @@ export const useFirebaseSMS = (phone: string, onVerificationSuccess: (idToken: s
         return;
       }
 
-      // Инициализируем reCAPTCHA
       const verifier = await ensureRecaptcha();
       
-      // Отправляем SMS
       const result = await signInWithPhoneNumber(auth, phone, verifier);
       setConfirmationResult(result);
       
-      setCountdown(60); // 60 секунд до возможности повторной отправки
+      setCountdown(60);
       
       
     } catch (error: any) {
       console.error('SMS sending error:', error);
       
-      // Очищаем reCAPTCHA при ошибке
       if (recaptchaVerifier) {
         try {
           recaptchaVerifier.clear();
@@ -123,17 +109,14 @@ export const useFirebaseSMS = (phone: string, onVerificationSuccess: (idToken: s
     }
   };
 
-  // Верификация SMS кода
   const verifyCode = async (code: string) => {
     if (!confirmationResult || !code) return;
 
     try {
       setIsLoading(true);
       
-      // Верифицируем код
       const cred = await confirmationResult.confirm(code);
       
-      // Получаем idToken
       const idToken = await cred.user.getIdToken();
       
       console.log({
@@ -141,7 +124,6 @@ export const useFirebaseSMS = (phone: string, onVerificationSuccess: (idToken: s
         idToken: idToken.slice(0, 20) + '...'
       });
       
-      // Вызываем callback с idToken
       onVerificationSuccess(idToken);
       
     } catch (error: any) {

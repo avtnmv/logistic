@@ -12,7 +12,7 @@ export interface VerificationParams {
 export class VerificationService {
   private static instance: VerificationService;
   private generatedCodes: Map<string, { code: string; timestamp: number }> = new Map();
-  private readonly CODE_EXPIRY_TIME = 10 * 60 * 1000; // 10 минут
+  private readonly CODE_EXPIRY_TIME = 10 * 60 * 1000;
 
   private constructor() {}
 
