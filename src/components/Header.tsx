@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useCurrentUser } from '../hooks/useCurrentUser';
-import { logoutUser } from '../data/testData';
+import { useAuth } from '../contexts/AuthContext';
 
 import '../css/header.css';
 
@@ -11,7 +10,7 @@ const Header: React.FC = () => {
   const navigate = useNavigate();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  const currentUser = useCurrentUser();
+  const { user: currentUser, logout } = useAuth();
 
   const isActive = (path: string) => location.pathname === path;
   
@@ -135,7 +134,10 @@ const Header: React.FC = () => {
                     </div>
                     <div className="mobile-menu__user-details">
                       <div className="mobile-menu__user-name">
-                        {currentUser ? `${currentUser.firstName} ${currentUser.lastName}` : 'Пользователь'}
+                        {currentUser ? 
+                          `${currentUser.first_name || ''} ${currentUser.last_name || ''}`.trim() || 'Пользователь' 
+                          : 'Пользователь'
+                        }
                       </div>
                     </div>
                     <Link 
@@ -259,9 +261,10 @@ const Header: React.FC = () => {
                   <Link 
                     to="/" 
                     className="mobile-menu__item mobile-menu__item--logout"
-                    onClick={() => {
-                      logoutUser();
+                    onClick={async () => {
+                      await logout();
                       closeMobileMenu();
+                      navigate('/');
                     }}
                   >
                     <div className="mobile-menu__item-icon">
