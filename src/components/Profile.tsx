@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import Header from './Header';
 import LeftSidebar from './LeftSidebar';
-import { useCurrentUser } from '../hooks/useCurrentUser';
+import { useAuth } from '../contexts/AuthContext';
 import { useSidebar } from '../contexts/SidebarContext';
 import VerificationForm, { VerificationFormData } from './VerificationForm';
 import NotificationModal from './NotificationModal';
@@ -10,7 +10,7 @@ import '../css/left-sidebar.css';
 import '../css/homepage.css';
 
 const Profile: React.FC = () => {
-  const currentUser = useCurrentUser();
+  const { user: currentUser } = useAuth();
   const { isSidebarOpen, closeSidebar } = useSidebar();
   const [userLocation, setUserLocation] = useState<string>('Определяется...');
   const [registrationDate, setRegistrationDate] = useState<string>('');
@@ -52,24 +52,17 @@ const Profile: React.FC = () => {
       setUserLocation('Не поддерживается');
     }
 
-    const storedUser = localStorage.getItem('currentUser');
-    if (storedUser) {
-      try {
-        const user = JSON.parse(storedUser);
-        if (user.createdAt) {
-          setRegistrationDate(new Date(user.createdAt).toLocaleDateString('en-US'));
-        } else {
-          setRegistrationDate(new Date().toLocaleDateString('en-US'));
-        }
-      } catch (e) {
-        setRegistrationDate(new Date().toLocaleDateString('en-US'));
-      }
+    // Получаем дату регистрации из текущего пользователя
+    if (currentUser?.created_at) {
+      setRegistrationDate(new Date(currentUser.created_at).toLocaleDateString('ru-RU'));
+    } else {
+      setRegistrationDate('Не указано');
     }
 
     return () => {
       document.body.style.backgroundColor = 'white';
     };
-  }, []);
+  }, [currentUser]);
 
   useEffect(() => {
     const checkVerificationStatus = async () => {
@@ -356,7 +349,7 @@ const Profile: React.FC = () => {
                   </div>
                   <div className="user-details">
                     <div className="user-name-section">
-                      <h3>{currentUser?.firstName ? currentUser.firstName.toUpperCase() : 'НЕ УКАЗАНО'} {currentUser?.lastName ? currentUser.lastName.toUpperCase() : ''}</h3>
+                      <h3>{currentUser?.first_name ? currentUser.first_name.toUpperCase() : 'НЕ УКАЗАНО'} {currentUser?.last_name ? currentUser.last_name.toUpperCase() : ''}</h3>
                     </div>
                     <div className="user-info-row">
                       <span className="user-location">Местоположение: {userLocation}</span>
@@ -414,7 +407,7 @@ const Profile: React.FC = () => {
                     <input 
                       type="text" 
                       className="form-input" 
-                      value={currentUser?.firstName || ''} 
+                      value={currentUser?.first_name || ''} 
                       placeholder="Не указано"
                       readOnly 
                     />
@@ -425,7 +418,7 @@ const Profile: React.FC = () => {
                     <input 
                       type="text" 
                       className="form-input" 
-                      value={currentUser?.lastName || ''} 
+                      value={currentUser?.last_name || ''} 
                       placeholder="Не указано"
                       readOnly 
                     />
