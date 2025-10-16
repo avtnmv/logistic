@@ -143,61 +143,37 @@ const AdminPanel: React.FC = () => {
 
   // Load data based on current tab
   useEffect(() => {
-    console.log('=== AdminPanel useEffect triggered ===');
-    console.log('Current tab:', currentTab);
-    console.log('User:', user);
-    console.log('User is_admin:', user?.is_admin);
-    console.log('User authenticated:', !!user);
-    
     if (user?.is_admin) {
-      console.log('User is admin, loading tab data...');
       loadTabData();
-    } else {
-      console.log('User is not admin or not authenticated, skipping data load');
-      if (user && !user.is_admin) {
-        console.log('User exists but is not admin');
-      } else if (!user) {
-        console.log('No user found');
-      }
     }
   }, [currentTab, user]);
 
   const loadTabData = async () => {
-    console.log('=== loadTabData called ===');
-    console.log('Current tab:', currentTab);
-    console.log('User:', user);
     setLoading(true);
     setError(null);
     
     try {
       switch (currentTab) {
         case 0: // Users
-          console.log('Loading users...');
           await loadUsers();
           break;
         case 1: // Cargo
-          console.log('Loading cargos...');
           await loadCargos();
           break;
         case 2: // Transport
-          console.log('Loading transports...');
           await loadTransports();
           break;
         case 3: // IP Blacklist
-          console.log('Loading IP blacklist...');
           await loadIPBlacklist();
           break;
         case 4: // Geo Locations
-          console.log('Loading geo locations...');
           await loadGeoLocations();
           break;
         case 5: // Activity Logs
-          console.log('Loading activity logs...');
           await loadActivityLogs();
           break;
       }
     } catch (err: any) {
-      console.error('Error in loadTabData:', err);
       setError(err.message || 'Ошибка загрузки данных');
     } finally {
       setLoading(false);
@@ -206,43 +182,20 @@ const AdminPanel: React.FC = () => {
 
   const loadUsers = async () => {
     try {
-      console.log('=== LOAD USERS DEBUG ===');
-      console.log('Current user for admin check:', user);
-      console.log('User is_admin:', user?.is_admin);
-      console.log('User name:', user?.first_name, user?.last_name);
-      console.log('Access token exists:', !!localStorage.getItem('accessToken'));
-      console.log('Access token:', localStorage.getItem('accessToken')?.slice(0, 20) + '...');
-      console.log('API Base URL:', config.apiBaseUrl);
-      
-      const requestParams = {
+      const response = await adminService.getUsersList({
         page: usersPage + 1,
         limit: usersRowsPerPage,
-      };
-      console.log('Request params:', requestParams);
-      
-      const response = await adminService.getUsersList(requestParams);
-      
-      console.log('Users API response:', response);
-      console.log('Response status:', response.status);
-      console.log('Response data:', response.data);
-      console.log('Response message:', response.message);
-      console.log('Response error:', response.error);
+      });
       
       if (response.status && response.data) {
-        console.log('Setting users:', response.data.users || []);
-        console.log('Setting total:', response.data.total || 0);
         setUsers(response.data.users || []);
         setUsersTotal(response.data.total || 0);
       } else {
-        console.error('Failed to load users - response not successful:', response);
         setUsers([]);
         setUsersTotal(0);
         setError(`Не удалось загрузить список пользователей: ${response.message || response.error || 'Неизвестная ошибка'}`);
       }
     } catch (err: any) {
-      console.error('Error loading users - exception caught:', err);
-      console.error('Error message:', err.message);
-      console.error('Error status:', err.statusCode);
       setUsers([]);
       setUsersTotal(0);
       setError(err.message || 'Ошибка загрузки пользователей');
@@ -256,19 +209,15 @@ const AdminPanel: React.FC = () => {
         limit: cargosRowsPerPage,
       });
       
-      console.log('Cargos API response:', response);
-      
       if (response.status && response.data) {
         setCargos(response.data.data || []);
         setCargosTotal(response.data.total || 0);
       } else {
-        console.error('Failed to load cargos:', response);
         setCargos([]);
         setCargosTotal(0);
         setError('Не удалось загрузить список грузов');
       }
     } catch (err: any) {
-      console.error('Error loading cargos:', err);
       setCargos([]);
       setCargosTotal(0);
       setError(err.message || 'Ошибка загрузки грузов');
@@ -282,19 +231,15 @@ const AdminPanel: React.FC = () => {
         limit: transportsRowsPerPage,
       });
       
-      console.log('Transports API response:', response);
-      
       if (response.status && response.data) {
         setTransports(response.data.data || []);
         setTransportsTotal(response.data.total || 0);
       } else {
-        console.error('Failed to load transports:', response);
         setTransports([]);
         setTransportsTotal(0);
         setError('Не удалось загрузить список транспорта');
       }
     } catch (err: any) {
-      console.error('Error loading transports:', err);
       setTransports([]);
       setTransportsTotal(0);
       setError(err.message || 'Ошибка загрузки транспорта');
@@ -308,19 +253,15 @@ const AdminPanel: React.FC = () => {
         limit: ipBlacklistRowsPerPage,
       });
       
-      console.log('IP Blacklist API response:', response);
-      
       if (response.status && response.data) {
         setIpBlacklist(response.data.items || []);
         setIpBlacklistTotal(response.data.total || 0);
       } else {
-        console.error('Failed to load IP blacklist:', response);
         setIpBlacklist([]);
         setIpBlacklistTotal(0);
         setError('Не удалось загрузить IP blacklist');
       }
     } catch (err: any) {
-      console.error('Error loading IP blacklist:', err);
       setIpBlacklist([]);
       setIpBlacklistTotal(0);
       setError(err.message || 'Ошибка загрузки IP blacklist');
@@ -334,19 +275,15 @@ const AdminPanel: React.FC = () => {
         limit: geoLocationsRowsPerPage,
       });
       
-      console.log('Geo Locations API response:', response);
-      
       if (response.status && response.data) {
         setGeoLocations(response.data.locations || []);
         setGeoLocationsTotal(response.data.total || 0);
       } else {
-        console.error('Failed to load geo locations:', response);
         setGeoLocations([]);
         setGeoLocationsTotal(0);
         setError('Не удалось загрузить геолокации');
       }
     } catch (err: any) {
-      console.error('Error loading geo locations:', err);
       setGeoLocations([]);
       setGeoLocationsTotal(0);
       setError(err.message || 'Ошибка загрузки геолокаций');
@@ -360,19 +297,15 @@ const AdminPanel: React.FC = () => {
         limit: activityLogsRowsPerPage,
       });
       
-      console.log('Activity Logs API response:', response);
-      
       if (response.status && response.data) {
         setActivityLogs(response.data.logs || []);
         setActivityLogsTotal(response.data.total || 0);
       } else {
-        console.error('Failed to load activity logs:', response);
         setActivityLogs([]);
         setActivityLogsTotal(0);
         setError('Не удалось загрузить логи активности');
       }
     } catch (err: any) {
-      console.error('Error loading activity logs:', err);
       setActivityLogs([]);
       setActivityLogsTotal(0);
       setError(err.message || 'Ошибка загрузки логов активности');
@@ -447,18 +380,14 @@ const AdminPanel: React.FC = () => {
   };
 
   const runApiTests = async () => {
-    console.log('=== RUNNING API TESTS ===');
-    
     // Тест токена
     testAuthToken();
     
     // Тест соединения
     const connectionTest = await testApiConnection();
-    console.log('Connection test result:', connectionTest);
     
     // Тест админского endpoint
     const adminTest = await testAdminEndpoint();
-    console.log('Admin test result:', adminTest);
     
     // Обновляем данные пользователей после тестов
     if (adminTest.success) {

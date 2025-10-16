@@ -42,23 +42,18 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       try {
         if (authService.isAuthenticated()) {
           // Всегда загружаем пользователя с сервера при перезагрузке
-          console.log('Loading user from server...');
           const response = await authService.getMe();
           if (response.status && response.data) {
-            console.log('User loaded from server:', response.data);
             setUser(response.data);
           } else {
-            console.warn('Failed to load user from server:', response);
             // Если не удалось загрузить пользователя, очищаем токены
             apiClient.clearTokens();
             setUser(null);
           }
         } else {
-          console.log('User not authenticated');
           setUser(null);
         }
       } catch (error) {
-        console.warn('Auth check failed:', error);
         // Если токен недействителен, очищаем данные
         apiClient.clearTokens();
         setUser(null);

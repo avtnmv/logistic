@@ -43,17 +43,7 @@ export const validateEnvironment = () => {
     throw new Error(`Missing required environment variables: ${missingVars.join(', ')}`);
   }
   
-  if (config.app.debug) {
-    console.log('Environment configuration:', {
-      apiBaseUrl: config.apiBaseUrl,
-      firebase: {
-        projectId: config.firebase.projectId,
-        authDomain: config.firebase.authDomain,
-      },
-      app: config.app,
-      features: config.features,
-    });
-  }
+  // Environment configuration loaded
 };
 
 export default config;
