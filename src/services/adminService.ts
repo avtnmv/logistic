@@ -7,11 +7,13 @@ export interface AdminUser extends User {
 }
 
 export interface AdminUserListResponse {
-  users: AdminUser[];
+  items: AdminUser[];
   total: number;
   page: number;
   pages: number;
   limit: number;
+  sort: string;
+  dir: string;
 }
 
 export interface AdminUserListParams {
